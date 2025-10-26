@@ -10,7 +10,7 @@ namespace html2uuitk.Cli;
 
 internal sealed class CssConverter
 {
-    private static readonly Regex LeadingDecimalRegex = new(@"(^|\s)\.(\d)", RegexOptions.Compiled);
+    private static readonly Regex LeadingDecimalRegex = new(@"(^|[\s,(])\.(\d)", RegexOptions.Compiled);
 
     private readonly Config _config;
     private readonly Dictionary<string, UssProperty> _ussProperties;
@@ -41,8 +41,6 @@ internal sealed class CssConverter
 
         foreach (var rule in rules)
         {
-            var ignoreRule = false;
-
             // Get selector text using reflection or string representation
             var selectorText = ExCssReflection.GetSelectorText(rule);
 
@@ -50,11 +48,13 @@ internal sealed class CssConverter
                 continue;
 
             var segments = selectorText.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            var validSegments = new List<string>();
 
             for (var segIndex = 0; segIndex < segments.Length; segIndex++)
             {
                 var selector = segments[segIndex].Trim();
                 var selectorParts = selector.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var isValidSegment = true;
 
                 for (var i = 0; i < selectorParts.Length; i++)
                 {
@@ -63,8 +63,15 @@ internal sealed class CssConverter
                     // Filter out unsupported pseudo-elements (::before, ::after, etc.)
                     if (HasUnsupportedPseudoElement(segment))
                     {
-                        ignoreRule = true;
-                        continue;
+                        isValidSegment = false;
+                        break;
+                    }
+
+                    // Filter out unsupported pseudo-classes
+                    if (HasUnsupportedPseudoClass(segment))
+                    {
+                        isValidSegment = false;
+                        break;
                     }
 
                     // Transform HTML tags to Unity UI elements, preserving pseudo-classes
@@ -75,15 +82,26 @@ internal sealed class CssConverter
                     {
                         if (segment.Contains(breaking, StringComparison.OrdinalIgnoreCase))
                         {
-                            ignoreRule = true;
+                            isValidSegment = false;
+                            break;
                         }
                     }
+
+                    if (!isValidSegment)
+                        break;
                 }
 
-                segments[segIndex] = string.Join(' ', selectorParts);
+                if (isValidSegment)
+                {
+                    validSegments.Add(string.Join(' ', selectorParts));
+                }
             }
 
-            var finalSelectorText = string.Join(", ", segments);
+            // Skip if no valid segments remain
+            if (validSegments.Count == 0)
+                continue;
+
+            var finalSelectorText = string.Join(", ", validSegments);
             var builder = new StringBuilder();
 
             builder.Append(finalSelectorText.Equals("body", StringComparison.OrdinalIgnoreCase) ? ":root" : finalSelectorText)
@@ -98,6 +116,21 @@ internal sealed class CssConverter
             {
                 var property = TransformProperty(declaration.Key);
                 var value = declaration.Value;
+
+                // CSS custom properties (variables) - Unity USS supports these
+                if (property.StartsWith("--", StringComparison.Ordinal))
+                {
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        builder.Append("    ")
+                               .Append(property)
+                               .Append(": ")
+                               .Append(value)
+                               .Append(";\n");
+                        validDeclarations++;
+                    }
+                    continue;
+                }
 
                 if (_ussProperties.TryGetValue(property, out var metadata))
                 {
@@ -129,7 +162,7 @@ internal sealed class CssConverter
 
             builder.Append("}\n");
 
-            if (ignoreRule || validDeclarations == 0)
+            if (validDeclarations == 0)
             {
                 Console.WriteLine($"- Empty/invalid ruleset discarded: {finalSelectorText}");
             }
@@ -331,5 +364,56 @@ internal sealed class CssConverter
 
         return unsupportedPseudoElements.Any(pseudo =>
             selector.Contains(pseudo, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool HasUnsupportedPseudoClass(string selector)
+    {
+        // Unity supported pseudo-classes
+        var supportedPseudoClasses = new[]
+        {
+            ":hover", ":active", ":focus", ":disabled", ":enabled",
+            ":checked", ":inactive", ":selected", ":root"
+        };
+
+        // Check for :nth-child() and similar unsupported pseudo-classes
+        if (selector.Contains(":nth-child", StringComparison.OrdinalIgnoreCase) ||
+            selector.Contains(":nth-of-type", StringComparison.OrdinalIgnoreCase) ||
+            selector.Contains(":first-child", StringComparison.OrdinalIgnoreCase) ||
+            selector.Contains(":last-child", StringComparison.OrdinalIgnoreCase) ||
+            selector.Contains(":only-child", StringComparison.OrdinalIgnoreCase) ||
+            selector.Contains(":first-of-type", StringComparison.OrdinalIgnoreCase) ||
+            selector.Contains(":last-of-type", StringComparison.OrdinalIgnoreCase) ||
+            selector.Contains(":focus-visible", StringComparison.OrdinalIgnoreCase) ||
+            selector.Contains(":focus-within", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // Check if selector has a supported pseudo-class
+        foreach (var pseudoClass in supportedPseudoClasses)
+        {
+            // Use exact matching: check if the pseudo-class is followed by a word boundary
+            // (space, comma, bracket, or end of string)
+            var index = selector.IndexOf(pseudoClass, StringComparison.OrdinalIgnoreCase);
+            if (index >= 0)
+            {
+                var endIndex = index + pseudoClass.Length;
+                if (endIndex >= selector.Length ||
+                    !char.IsLetterOrDigit(selector[endIndex]) && selector[endIndex] != '-')
+                {
+                    return false; // Found a supported pseudo-class with proper boundary
+                }
+            }
+        }
+
+        // Check if there's any pseudo-class at all
+        var colonIndex = selector.IndexOf(':');
+        if (colonIndex >= 0 && colonIndex < selector.Length - 1 && !selector.Contains("::", StringComparison.Ordinal))
+        {
+            // Has a pseudo-class but not a supported one
+            return true;
+        }
+
+        return false; // No pseudo-class found
     }
 }

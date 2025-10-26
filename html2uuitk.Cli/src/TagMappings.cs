@@ -10,6 +10,7 @@ internal static class TagMappings
         ["div"] = "ui:VisualElement",
         ["p"] = "ui:Label",
         ["span"] = "ui:Label",
+        ["a"] = "ui:Button",
         ["button"] = "ui:Button",
         ["input"] = "ui:TextField",
         ["input[type=\"text\"]"] = "ui:TextField",

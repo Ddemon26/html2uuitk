@@ -55,7 +55,7 @@ internal sealed class HtmlConverter
 
         if (string.Equals(uiTag, "ui:Label", StringComparison.OrdinalIgnoreCase))
         {
-            var text = element.TextContent ?? string.Empty;
+            var text = NormalizeWhitespace(element.TextContent ?? string.Empty);
             var condensed = CollapseForValidation(text);
 
             if (condensed.Length == 0)
@@ -75,7 +75,7 @@ internal sealed class HtmlConverter
         else if (string.Equals(uiTag, "ui:Button", StringComparison.OrdinalIgnoreCase))
         {
             // Convert button text to text attribute
-            var text = element.TextContent?.Trim();
+            var text = NormalizeWhitespace(element.TextContent ?? string.Empty);
             if (string.IsNullOrEmpty(text))
             {
                 // Self-closing button if no text content
@@ -163,7 +163,7 @@ internal sealed class HtmlConverter
 
     private string ConvertTextNode(IText textNode, string? parentUiTag)
     {
-        var text = textNode.TextContent ?? string.Empty;
+        var text = NormalizeWhitespace(textNode.TextContent ?? string.Empty);
         if (string.IsNullOrWhiteSpace(text))
         {
             return string.Empty;
@@ -172,10 +172,9 @@ internal sealed class HtmlConverter
         // If the parent is a VisualElement, wrap text in a Label
         if (string.Equals(parentUiTag, "ui:VisualElement", StringComparison.OrdinalIgnoreCase))
         {
-            var trimmedText = text.Trim();
-            if (!string.IsNullOrEmpty(trimmedText))
+            if (!string.IsNullOrEmpty(text))
             {
-                return $"<ui:Label text=\"{EscapeXml(trimmedText)}\" />";
+                return $"<ui:Label text=\"{EscapeXml(text)}\" />";
             }
             return string.Empty;
         }
@@ -189,8 +188,14 @@ internal sealed class HtmlConverter
         var lowerAttrName = attrName.ToLowerInvariant();
 
         // Filter out invalid HTML attributes that Unity doesn't support
-        var invalidAttributes = new[] { "onclick", "onchange", "onload", "type", "min", "max", "step", "src", "href", "action", "method" };
+        var invalidAttributes = new[] { "onclick", "onchange", "onload", "type", "min", "max", "step", "src", "href", "action", "method", "role" };
         if (invalidAttributes.Contains(lowerAttrName))
+        {
+            return (attrName, attrValue, false);
+        }
+
+        // Filter out ARIA attributes (aria-*)
+        if (lowerAttrName.StartsWith("aria-", StringComparison.OrdinalIgnoreCase))
         {
             return (attrName, attrValue, false);
         }
@@ -224,6 +229,16 @@ internal sealed class HtmlConverter
     {
         var trimmed = text.Trim();
         return trimmed.Replace(" ", string.Empty, StringComparison.Ordinal);
+    }
+
+    private static string NormalizeWhitespace(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        // Replace all whitespace sequences (spaces, tabs, newlines) with single space
+        var normalized = Regex.Replace(text, @"\s+", " ", RegexOptions.Compiled);
+        return normalized.Trim();
     }
 
     private static string EscapeXml(string value)
