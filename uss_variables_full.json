@@ -1,0 +1,755 @@
+[
+  {
+    "name": "--current-font",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('Fonts/System/System Normal.ttf')",
+    "lines_defined": [
+      112
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--cursor-text",
+    "type": "unknown",
+    "defined": true,
+    "value_example": "url(\"project: --cursor-slide-arrow: url(\"project: --cursor-resize-horizontal: url(\"project: --cursor-resize-vertical: url(\"project: --cursor-resize-diagonal-right: url(\"project: --cursor-resize-diagonal-left: url(\"project: --cursor-zoom-in: url(\"project: --cursor-zoom-out: url(\"project: --cursor-not-allowed: url(\"project: --cursor-hourglass: url(\"project: --cursor-hand-point: url(\"project: --cursor-hand-drag: url(\"project: } .unity-disabled { opacity: 0.5",
+    "lines_defined": [
+      166
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--dragging",
+    "type": "unknown",
+    "defined": true,
+    "value_example": "hover { } .unity-tab--dragging .unity-tab__header { } .unity-tab__reorderable-handle { align-items: center",
+    "lines_defined": [
+      2131,
+      2171
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--font",
+    "type": "unknown",
+    "defined": true,
+    "value_example": "url(\"project: --unity-metrics-default-font_normal_size: 11px; --unity-metrics-default-font_semi_small_size: 10px; --unity-metrics-default-font_tiny_size: 8px; --unity-metrics-default-font_small_size: 9px; --unity-metrics-default-font_big_size: 12px; --unity-metrics-default-font_very_big_size: 16px; --unity-metrics-single_line-height: 18px; --unity-metrics-single_line_large-height: 20px; --unity-metrics-single_line_small-height: 16px; --unity-metrics-default-border_radius: 3px; --unity-metrics-toolbar-height: 21px; --unity-metrics-toolbar_button-height: 20px; --unity-metrics-inspector_titlebar-height: 22px; font-size: 11px; -unity-font-definition: var(--font); --unity-icons-arrow_right: resource('Builtin Skins/DarkSkin/Images/ArrowNavigationRight.png'); --unity-icons-arrow_left: resource('Builtin Skins/DarkSkin/Images/ArrowNavigationLeft.png'); --unity-icons-clear: resource('UIPackageResources/Images/d_clear.png'); --unity-icons-console_entry_error: resource('Icons/d_console.erroricon.png'); --unity-icons-console_entry_error_small: resource('Icons/d_console.erroricon.sml.png'); --unity-icons-console_entry_info: resource('Icons/d_console.infoicon.png'); --unity-icons-console_entry_info_small: resource('Icons/d_console.infoicon.sml.png'); --unity-icons-console_entry_warn: resource('Icons/d_console.warnicon.png'); --unity-icons-console_entry_warn_small: resource('Icons/d_console.warnicon.sml.png'); --unity-icons-dropdown: resource('UIPackageResources/Images/d_dropdown.png'); --unity-icons-dropdown_toggle: resource('UIPackageResources/Images/d_dropdown_toggle.png'); --unity-icons-foldout: resource('UIPackageResources/Images/d_IN_foldout.png'); --unity-icons-foldout-checked_focus: resource('UIPackageResources/Images/d_IN_foldout_focus_on.png'); --unity-icons-foldout-checked_pressed: resource('UIPackageResources/Images/d_IN_foldout_act_on.png'); --unity-icons-foldout-focus: resource('UIPackageResources/Images/d_IN_foldout_focus.png'); --unity-icons-foldout-pressed: resource('UIPackageResources/Images/d_IN_foldout_act.png'); --unity-icons-foldout-checked: resource('UIPackageResources/Images/d_IN_foldout_on.png'); --unity-icons-link: resource('Icons/d_UnLinked.png'); --unity-icons-link-checked: resource('Icons/d_Linked.png'); --unity-icons-lock: resource('Builtin Skins/DarkSkin/Images/IN LockButton.png'); --unity-icons-lock-checked: resource('Builtin Skins/DarkSkin/Images/IN LockButton on.png'); --unity-icons-lock-checked_pressed: resource('Builtin Skins/DarkSkin/Images/IN LockButton on act.png'); --unity-icons-lock-pressed: resource('Builtin Skins/DarkSkin/Images/IN LockButton act.png'); --unity-icons-minus: resource('UIPackageResources/Images/d_ol_minus.png'); --unity-icons-minus-hover: resource('UIPackageResources/Images/d_ol_minus_act.png'); --unity-icons-pane_options: resource('Builtin Skins/DarkSkin/Images/pane options.png'); --unity-icons-picker: resource('UIPackageResources/Images/d_pick.png'); --unity-icons-plus: resource('UIPackageResources/Images/d_ol_plus.png'); --unity-icons-plus-hover: resource('UIPackageResources/Images/d_ol_plus_act.png'); --unity-icons-profiler_timeline_digdown_arrow: resource('Profiler/d_ProfilerTimelineDigDownArrow.png'); --unity-icons-profiler_timeline_rollup_arrow: resource('Profiler/d_ProfilerTimelineRollUpArrow.png'); --unity-icons-pulldown: resource('UIPackageResources/Images/d_dropdown.png'); --unity-icons-scroll_down: resource('UIPackageResources/Images/d_scrolldown.png'); --unity-icons-scroll_left: resource('UIPackageResources/Images/d_scrollleft.png'); --unity-icons-scroll_right: resource('UIPackageResources/Images/d_scrollright.png'); --unity-icons-scroll_up: resource('UIPackageResources/Images/d_scrollup.png'); --unity-icons-search: resource('UIPackageResources/Images/d_search_icon.png'); --unity-icons-search_menu: resource('UIPackageResources/Images/d_search_menu.png'); --unity-icons-shuriken_toggle-checked: resource('Builtin Skins/DarkSkin/Images/ShurikenToggleNormalOn.png'); --unity-icons-shuriken_toggle-checked_focus: resource('Builtin Skins/DarkSkin/Images/ShurikenToggleFocusedOn.png'); --unity-icons-shuriken_toggle-checked_hover: resource('Builtin Skins/DarkSkin/Images/ShurikenToggleHoverOn.png'); --unity-icons-shuriken_toggle_bg: resource('Builtin Skins/DarkSkin/Images/ShurikenToggleNormal.png'); --unity-icons-shuriken_toggle_bg-focus: resource('Builtin Skins/DarkSkin/Images/ShurikenToggleFocused.png'); --unity-icons-shuriken_toggle_bg-focus_mixed: resource('Builtin Skins/DarkSkin/Images/ShurikenToggleFocusedMixed.png'); --unity-icons-shuriken_toggle_bg-hover: resource('Builtin Skins/DarkSkin/Images/ShurikenToggleHover.png'); --unity-icons-shuriken_toggle_bg-hover_mixed: resource('Builtin Skins/DarkSkin/Images/ShurikenToggleHoverMixed.png'); --unity-icons-shuriken_toggle_bg-mixed: resource('Builtin Skins/DarkSkin/Images/ShurikenToggleNormalMixed.png'); --unity-icons-toggle-checked: resource('UIPackageResources/Images/d_toggle_on.png'); --unity-icons-toggle-checked_focus: resource('UIPackageResources/Images/d_toggle_on_focus.png'); --unity-icons-toggle-checked_hover: resource('UIPackageResources/Images/d_toggle_on_hover.png'); --unity-icons-toggle-hover_mixed: resource('UIPackageResources/Images/d_toggle_on_hover.png'); --unity-icons-toggle-focus_mixed: resource('UIPackageResources/Images/d_toggle_on_focus.png'); --unity-icons-toggle-mixed: resource('UIPackageResources/Images/d_toggle_on.png'); --unity-icons-toggle_bg: resource('UIPackageResources/Images/d_toggle_bg.png'); --unity-icons-toggle_bg-focus: resource('UIPackageResources/Images/d_toggle_bg_focus.png'); --unity-icons-toggle_bg-focus_mixed: resource('UIPackageResources/Images/d_toggle_mixed_bg_focus.png'); --unity-icons-toggle_bg-hover: resource('UIPackageResources/Images/d_toggle_bg_hover.png'); --unity-icons-toggle_bg-hover_mixed: resource('UIPackageResources/Images/d_toggle_mixed_bg_hover.png'); --unity-icons-toggle_bg-mixed: resource('UIPackageResources/Images/d_toggle_mixed_bg.png'); --unity-icons-window_button_close: resource('Icons/d_winbtn_win_close.png'); --unity-icons-window_button_max: resource('Icons/d_winbtn_win_max.png'); --unity-icons-window_button_restore: resource('Icons/d_winbtn_win_restore.png'); --unity-icons-ellipsis-menu: resource('Builtin Skins/DarkSkin/Images/EllipsisMenu.png'); --unity-icons-drag-handle: resource('Builtin Skins/DarkSkin/Images/WindowBottomResize.png'); --unity-icons-tab-close: resource('Builtin Skins/DarkSkin/Images/Remove.png'); } .unity-theme-env-variables { --theme-default-border-radius: 3px; --enable-style-hovering: true; --single-line-height: 18px; --theme-default-control-margin: 3px 3px 2px 3px; --theme-default-top-margin: 1px; --theme-default-bottom-margin: 1px; --theme-default-left-margin: 3px; --theme-default-right-margin: 3px; --theme-input-text-cursor: url(\"project: --window-toolbar-height: 21px",
+    "lines_defined": [
+      2
+    ],
+    "lines_referenced": [
+      17
+    ]
+  },
+  {
+    "name": "--mid",
+    "type": "unknown",
+    "defined": true,
+    "value_example": "focus:enabled { } .unity-button-group__button--right:focus:enabled { } .unity-button-group__button--left { margin-right: 0",
+    "lines_defined": [
+      1704
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--moving",
+    "type": "unknown",
+    "defined": true,
+    "value_example": "hover:enabled { } .unity-multi-column-header__column__sort-indicator { flex-direction: row",
+    "lines_defined": [
+      1829
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--selected",
+    "type": "unknown",
+    "defined": true,
+    "value_example": "hover:enabled { } .unity-collection-view:focus:enabled .unity-collection-view__item--selected { } .unity-collection-view { min-height: 20px",
+    "lines_defined": [
+      1377
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-app-toolbar-button-border-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      127
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-button-border-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      124
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-dropdown-border-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      128
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-help-box-icon-error",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_console.erroricon.png')",
+    "lines_defined": [
+      134
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-help-box-icon-info",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_console.infoicon.png')",
+    "lines_defined": [
+      132
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-help-box-icon-warning",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_console.warnicon.png')",
+    "lines_defined": [
+      133
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-checkmark",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_checkmark.png')",
+    "lines_defined": [
+      153
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-clear",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_clear_uielements.png')",
+    "lines_defined": [
+      152
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-close",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('Builtin Skins/DarkSkin/Images/Remove.png')",
+    "lines_defined": [
+      162
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-dropdown",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_dropdown.png')",
+    "lines_defined": [
+      149
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-foldout",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_IN_foldout.png')",
+    "lines_defined": [
+      142
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-foldout-act",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_IN_foldout_act.png')",
+    "lines_defined": [
+      143
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-foldout-focus",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_IN_foldout_focus.png')",
+    "lines_defined": [
+      144
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-foldout-on",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_IN_foldout_on.png')",
+    "lines_defined": [
+      145
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-foldout-on-act",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_IN_foldout_act_on.png')",
+    "lines_defined": [
+      146
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-foldout-on-focus",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_IN_foldout_focus_on.png')",
+    "lines_defined": [
+      147
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-pick",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_pick_uielements.png')",
+    "lines_defined": [
+      135
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-popup-search",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_search_menu.png')",
+    "lines_defined": [
+      151
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-pulldown",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_dropdown.png')",
+    "lines_defined": [
+      148
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-scroll-down",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_scrolldown_uielements.png')",
+    "lines_defined": [
+      159
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-scroll-left",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_scrollleft_uielements.png')",
+    "lines_defined": [
+      160
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-scroll-right",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_scrollright_uielements.png')",
+    "lines_defined": [
+      161
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-scroll-up",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_scrollup_uielements.png')",
+    "lines_defined": [
+      158
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-search",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_search_icon.png')",
+    "lines_defined": [
+      150
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toggle-bg",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_toggle_bg.png')",
+    "lines_defined": [
+      136
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toggle-bg-focus",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_toggle_bg_focus.png')",
+    "lines_defined": [
+      138
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toggle-bg-hover",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_toggle_bg_hover.png')",
+    "lines_defined": [
+      137
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toggle-mixed",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_toggle_mixed_bg.png')",
+    "lines_defined": [
+      113
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toggle-mixed-focus",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_toggle_mixed_bg_focus.png')",
+    "lines_defined": [
+      115
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toggle-mixed-hover",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_toggle_mixed_bg_hover.png')",
+    "lines_defined": [
+      114
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toggle-on",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_toggle_on.png')",
+    "lines_defined": [
+      139
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toggle-on-focus",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_toggle_on_focus.png')",
+    "lines_defined": [
+      141
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toggle-on-hover",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_toggle_on_hover.png')",
+    "lines_defined": [
+      140
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toolbar-breadcrumbs-first-item",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_breadcrump_left.png')",
+    "lines_defined": [
+      156
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toolbar-breadcrumbs-first-item-active",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_breadcrump_left_act.png')",
+    "lines_defined": [
+      157
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toolbar-breadcrumbs-item",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_breadcrump_mid.png')",
+    "lines_defined": [
+      154
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-image-toolbar-breadcrumbs-item-active",
+    "type": "asset-reference",
+    "defined": true,
+    "value_example": "resource('UIPackageResources/Images/d_breadcrump_mid_act.png')",
+    "lines_defined": [
+      155
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-input-border-checked-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      119
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-input-border-focus-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      117
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-input-border-hover-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      118
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-input-border-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      116
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-min-max-slider-thumb-border-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      131
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-object-field-border-checked-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      123
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-object-field-border-focus-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      122
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-object-field-border-hover-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      121
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-object-field-border-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      120
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-scrollbar-thumb-border-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      129
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-slider-thumb-border-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      130
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-toolbar-button-border-2-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      126
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--theme-toolbar-button-border-width",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      125
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-button-padding-bottom",
+    "type": "length",
+    "defined": true,
+    "value_example": "3px",
+    "lines_defined": [
+      109
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-button-padding-top",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      108
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-popup-padding-bottom",
+    "type": "length",
+    "defined": true,
+    "value_example": "2px",
+    "lines_defined": [
+      107
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-popup-padding-top",
+    "type": "integer",
+    "defined": true,
+    "value_example": "0",
+    "lines_defined": [
+      106
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-size",
+    "type": "length",
+    "defined": true,
+    "value_example": "11px",
+    "lines_defined": [
+      96
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-size-big",
+    "type": "length",
+    "defined": true,
+    "value_example": "12px",
+    "lines_defined": [
+      100
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-size-semi-small",
+    "type": "length",
+    "defined": true,
+    "value_example": "10px",
+    "lines_defined": [
+      97
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-size-small",
+    "type": "length",
+    "defined": true,
+    "value_example": "9px",
+    "lines_defined": [
+      99
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-size-tiny",
+    "type": "length",
+    "defined": true,
+    "value_example": "8px",
+    "lines_defined": [
+      98
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-size-very-big",
+    "type": "length",
+    "defined": true,
+    "value_example": "16px",
+    "lines_defined": [
+      101
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-standard-padding-bottom",
+    "type": "length",
+    "defined": true,
+    "value_example": "3px",
+    "lines_defined": [
+      104
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-standard-padding-bottom-with-border",
+    "type": "length",
+    "defined": true,
+    "value_example": "2px",
+    "lines_defined": [
+      105
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-standard-padding-top",
+    "type": "length",
+    "defined": true,
+    "value_example": "2px",
+    "lines_defined": [
+      102
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-font-standard-padding-top-with-border",
+    "type": "length",
+    "defined": true,
+    "value_example": "1px",
+    "lines_defined": [
+      103
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-image-size",
+    "type": "keyword",
+    "defined": true,
+    "value_example": "scale-to-fit",
+    "lines_defined": [
+      269
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-sync-text-editor-engine",
+    "type": "keyword",
+    "defined": true,
+    "value_example": "true",
+    "lines_defined": [
+      1197
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-toolbar-padding-bottom",
+    "type": "integer",
+    "defined": true,
+    "value_example": "0",
+    "lines_defined": [
+      111
+    ],
+    "lines_referenced": []
+  },
+  {
+    "name": "--unity-toolbar-padding-top",
+    "type": "integer",
+    "defined": true,
+    "value_example": "1",
+    "lines_defined": [
+      110
+    ],
+    "lines_referenced": []
+  }
+]

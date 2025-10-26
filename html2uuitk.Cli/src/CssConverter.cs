@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using ExCSS;
@@ -45,7 +44,7 @@ internal sealed class CssConverter
             var ignoreRule = false;
 
             // Get selector text using reflection or string representation
-            var selectorText = GetSelectorText(rule);
+            var selectorText = ExCssReflection.GetSelectorText(rule);
 
             if (string.IsNullOrWhiteSpace(selectorText))
                 continue;
@@ -87,7 +86,7 @@ internal sealed class CssConverter
             var validDeclarations = 0;
 
             // Get declarations using reflection
-            var declarations = GetDeclarations(rule);
+            var declarations = ExCssReflection.GetDeclarations(rule);
 
             foreach (var declaration in declarations)
             {
@@ -141,96 +140,6 @@ internal sealed class CssConverter
         }
 
         return result.ToString();
-    }
-
-    private string GetSelectorText(IStyleRule rule)
-    {
-        try
-        {
-            // Try to get SelectorText property
-            var selectorTextProperty = rule.GetType().GetProperty("SelectorText");
-            if (selectorTextProperty != null)
-            {
-                return selectorTextProperty.GetValue(rule)?.ToString() ?? string.Empty;
-            }
-
-            // Try to get Selectors collection and join them
-            var selectorsProperty = rule.GetType().GetProperty("Selectors");
-            if (selectorsProperty != null && selectorsProperty.GetValue(rule) is IEnumerable<object> selectors)
-            {
-                return string.Join(", ", selectors.Select(s => s.ToString()));
-            }
-
-            // Fallback to string representation
-            var ruleString = rule.ToString();
-            if (string.IsNullOrEmpty(ruleString))
-                return ruleString;
-            var match = Regex.Match(ruleString, @"^\s*([^{\s]+)");
-            return match.Success ? match.Groups[1].Value : ruleString;
-        }
-        catch
-        {
-            return string.Empty;
-        }
-    }
-
-    private Dictionary<string, string> GetDeclarations(IStyleRule rule)
-    {
-        var declarations = new Dictionary<string, string>();
-
-        try
-        {
-            // Try to get Style property
-            var styleProperty = rule.GetType().GetProperty("Style");
-            if (styleProperty != null && styleProperty.GetValue(rule) is IEnumerable<object> styleDeclarations)
-            {
-                foreach (var declaration in styleDeclarations)
-                {
-                    var nameProperty = declaration.GetType().GetProperty("Name");
-                    var valueProperty = declaration.GetType().GetProperty("Value") ?? declaration.GetType().GetProperty("Term");
-
-                    if (nameProperty != null && valueProperty != null)
-                    {
-                        var name = nameProperty.GetValue(declaration)?.ToString();
-                        var value = valueProperty.GetValue(declaration)?.ToString();
-
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            declarations[name] = value ?? string.Empty;
-                        }
-                    }
-                }
-                return declarations;
-            }
-
-            // Try to get Declarations property
-            var declarationsProperty = rule.GetType().GetProperty("Declarations");
-            if (declarationsProperty != null && declarationsProperty.GetValue(rule) is IEnumerable<object> declarationsList)
-            {
-                foreach (var declaration in declarationsList)
-                {
-                    var nameProperty = declaration.GetType().GetProperty("Name");
-                    var valueProperty = declaration.GetType().GetProperty("Value") ?? declaration.GetType().GetProperty("Term");
-
-                    if (nameProperty != null && valueProperty != null)
-                    {
-                        var name = nameProperty.GetValue(declaration)?.ToString();
-                        var value = valueProperty.GetValue(declaration)?.ToString();
-
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            declarations[name] = value ?? string.Empty;
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Warning: Could not extract CSS declarations: {ex.Message}");
-        }
-
-        return declarations;
     }
 
     private string TranslateValue(string value, string property)
