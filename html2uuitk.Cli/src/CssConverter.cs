@@ -60,6 +60,13 @@ internal sealed class CssConverter
                 {
                     var segment = selectorParts[i];
 
+                    // Filter out unsupported pseudo-elements that Unity doesn't support
+                    if (HasUnsupportedPseudoElement(segment))
+                    {
+                        ignoreRule = true;
+                        continue;
+                    }
+
                     if (TagMappings.GetUiTagForSelector(segment) is { } mapped)
                     {
                         selectorParts[i] = mapped.Replace("ui:", string.Empty, StringComparison.OrdinalIgnoreCase);
@@ -98,13 +105,17 @@ internal sealed class CssConverter
                     if (metadata.Native)
                     {
                         var translated = TranslateValue(value, property);
-                        builder.Append("    ")
-                               .Append(property)
-                               .Append(": ")
-                               .Append(translated)
-                               .Append(";\n");
-                        builder.Append(GetExtras(property, translated));
-                        validDeclarations++;
+                        // Only include property if it has a value
+                        if (!string.IsNullOrWhiteSpace(translated))
+                        {
+                            builder.Append("    ")
+                                   .Append(property)
+                                   .Append(": ")
+                                   .Append(translated)
+                                   .Append(";\n");
+                            builder.Append(GetExtras(property, translated));
+                            validDeclarations++;
+                        }
                     }
                     else
                     {
@@ -160,7 +171,8 @@ internal sealed class CssConverter
 
         if (string.Equals(property, "-unity-font", StringComparison.OrdinalIgnoreCase))
         {
-            return GetAssetPath(normalized) ?? "resource()";
+            var assetPath = GetAssetPath(normalized);
+            return assetPath ?? string.Empty; // Return empty to omit the property
         }
 
         if (string.Equals(property, "letter-spacing", StringComparison.OrdinalIgnoreCase))
@@ -187,7 +199,7 @@ internal sealed class CssConverter
     {
         return property.ToLowerInvariant() switch
         {
-            "-unity-font" or "-unity-font-definition" => "resource()", // Unity expects resource references for fonts
+            "-unity-font-definition" => string.Empty, // Will be handled separately
             "border-top-left-radius" or "border-top-right-radius" or "border-bottom-right-radius" or "border-bottom-left-radius"
                 => ConvertBorderRadius(value),
             "background-image" => ConvertBackgroundImage(value),
@@ -248,7 +260,11 @@ internal sealed class CssConverter
     {
         if (string.Equals(property, "-unity-font", StringComparison.OrdinalIgnoreCase))
         {
-            return "\t-unity-font-definition: resource();\n";
+            // Only add font-definition if we have an actual font resource
+            if (!string.IsNullOrWhiteSpace(GetAssetPath(value)))
+            {
+                return $"\t-unity-font-definition: {GetAssetPath(value)};\n";
+            }
         }
 
         return string.Empty;
@@ -265,5 +281,18 @@ internal sealed class CssConverter
         }
 
         return null;
+    }
+
+    private static bool HasUnsupportedPseudoElement(string selector)
+    {
+        // Unity doesn't support these pseudo-elements
+        var unsupportedPseudoElements = new[]
+        {
+            "::before", "::after", "::first-letter", "::first-line",
+            ":before", ":after", ":first-letter", ":first-line"
+        };
+
+        return unsupportedPseudoElements.Any(pseudo =>
+            selector.Contains(pseudo, StringComparison.OrdinalIgnoreCase));
     }
 }
