@@ -29,8 +29,62 @@ internal sealed class CssConverter
 
     public string Convert(string cssContent)
     {
+        // Pre-process CSS to remove unsupported pseudo-classes from multi-selectors
+        // This prevents ExCSS from silently failing to parse entire rules
+        cssContent = PreprocessUnsupportedPseudoClasses(cssContent);
+
         var stylesheet = _parser.Parse(cssContent);
         return CssToUss(stylesheet.StyleRules);
+    }
+
+    private static string PreprocessUnsupportedPseudoClasses(string css)
+    {
+        // ExCSS doesn't recognize newer pseudo-classes like :focus-visible
+        // and will silently fail to parse ANY rule containing them.
+        // So we need to strip them from comma-separated selectors before parsing.
+
+        var unsupportedPseudos = new[]
+        {
+            ":focus-visible", ":focus-within", ":nth-child", ":nth-of-type",
+            ":first-child", ":last-child", ":only-child", ":first-of-type", ":last-of-type"
+        };
+
+        // Pattern: find selector groups (comma-separated) followed by opening brace
+        var rulePattern = new Regex(@"([^{}]+)\{", RegexOptions.Compiled);
+
+        return rulePattern.Replace(css, match =>
+        {
+            var selectors = match.Groups[1].Value;
+            var segments = selectors.Split(',');
+            var filteredSegments = new List<string>();
+
+            foreach (var segment in segments)
+            {
+                var hasUnsupported = false;
+                foreach (var pseudo in unsupportedPseudos)
+                {
+                    if (segment.Contains(pseudo, StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasUnsupported = true;
+                        break;
+                    }
+                }
+
+                if (!hasUnsupported)
+                {
+                    filteredSegments.Add(segment);
+                }
+            }
+
+            // If we filtered out all selectors, keep one selector but make it invalid
+            // so ExCSS will skip it instead of causing a parse error
+            if (filteredSegments.Count == 0)
+            {
+                return "__invalid__ {";
+            }
+
+            return string.Join(", ", filteredSegments) + " {";
+        });
     }
 
     private string CssToUss(IEnumerable<IStyleRule> rules)
