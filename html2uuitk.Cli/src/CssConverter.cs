@@ -60,17 +60,16 @@ internal sealed class CssConverter
                 {
                     var segment = selectorParts[i];
 
-                    // Filter out unsupported pseudo-elements that Unity doesn't support
+                    // Filter out unsupported pseudo-elements (::before, ::after, etc.)
                     if (HasUnsupportedPseudoElement(segment))
                     {
                         ignoreRule = true;
                         continue;
                     }
 
-                    if (TagMappings.GetUiTagForSelector(segment) is { } mapped)
-                    {
-                        selectorParts[i] = mapped.Replace("ui:", string.Empty, StringComparison.OrdinalIgnoreCase);
-                    }
+                    // Transform HTML tags to Unity UI elements, preserving pseudo-classes
+                    var transformed = TransformSelectorWithPseudoClasses(segment);
+                    selectorParts[i] = transformed;
 
                     foreach (var breaking in _breakingSelectors)
                     {
@@ -281,6 +280,44 @@ internal sealed class CssConverter
         }
 
         return null;
+    }
+
+    private static string TransformSelectorWithPseudoClasses(string selector)
+    {
+        // Unity supported pseudo-classes that we want to preserve
+        var supportedPseudoClasses = new[]
+        {
+            ":hover", ":active", ":focus", ":disabled", ":enabled",
+            ":checked", ":inactive", ":selected", ":root"
+        };
+
+        // Check if the selector contains a pseudo-class
+        foreach (var pseudoClass in supportedPseudoClasses)
+        {
+            var index = selector.IndexOf(pseudoClass, StringComparison.OrdinalIgnoreCase);
+            if (index >= 0)
+            {
+                // Split into base selector and pseudo-class part
+                var baseSelector = selector[..index];
+                var pseudoPart = selector[index..];
+
+                // Transform the base selector
+                if (TagMappings.GetUiTagForSelector(baseSelector) is { } mapped)
+                {
+                    return mapped.Replace("ui:", string.Empty, StringComparison.OrdinalIgnoreCase) + pseudoPart;
+                }
+
+                return baseSelector + pseudoPart;
+            }
+        }
+
+        // No pseudo-class found, do normal transformation
+        if (TagMappings.GetUiTagForSelector(selector) is { } directMapped)
+        {
+            return directMapped.Replace("ui:", string.Empty, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return selector;
     }
 
     private static bool HasUnsupportedPseudoElement(string selector)
