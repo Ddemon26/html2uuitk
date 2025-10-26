@@ -155,9 +155,12 @@ internal sealed class CssConverter
         normalized = normalized.Replace("vw", "%", StringComparison.OrdinalIgnoreCase)
                                .Replace("vh", "%", StringComparison.OrdinalIgnoreCase);
 
+        // Handle Unity-specific property conversions
+        normalized = ConvertValueForUnity(property, normalized);
+
         if (string.Equals(property, "-unity-font", StringComparison.OrdinalIgnoreCase))
         {
-            return GetAssetPath(normalized) ?? normalized;
+            return GetAssetPath(normalized) ?? "resource()";
         }
 
         if (string.Equals(property, "letter-spacing", StringComparison.OrdinalIgnoreCase))
@@ -180,6 +183,52 @@ internal sealed class CssConverter
         return normalized;
     }
 
+    private static string ConvertValueForUnity(string property, string value)
+    {
+        return property.ToLowerInvariant() switch
+        {
+            "-unity-font" or "-unity-font-definition" => "resource()", // Unity expects resource references for fonts
+            "border-top-left-radius" or "border-top-right-radius" or "border-bottom-right-radius" or "border-bottom-left-radius"
+                => ConvertBorderRadius(value),
+            "background-image" => ConvertBackgroundImage(value),
+            "background-color" when value.Contains("gradient", StringComparison.OrdinalIgnoreCase) => "none",
+            "font-size" => ConvertEmToPx(value),
+            _ => value
+        };
+    }
+
+    private static string ConvertBorderRadius(string value)
+    {
+        // Unity USS doesn't support shorthand border-radius with multiple values
+        // Take only the first value
+        var parts = value.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 0 ? parts[0] : value;
+    }
+
+    private static string ConvertBackgroundImage(string value)
+    {
+        // Unity doesn't support CSS gradients, convert to none
+        if (value.Contains("gradient", StringComparison.OrdinalIgnoreCase))
+        {
+            return "none";
+        }
+        return value;
+    }
+
+    private static string ConvertEmToPx(string value)
+    {
+        // Convert em units to pixels (assuming 16px = 1em as base)
+        if (value.EndsWith("em", StringComparison.OrdinalIgnoreCase))
+        {
+            if (double.TryParse(value[..^2], NumberStyles.Float, CultureInfo.InvariantCulture, out var emValue))
+            {
+                var pxValue = emValue * 16; // Standard conversion
+                return $"{pxValue:F0}px";
+            }
+        }
+        return value;
+    }
+
     private static string TransformProperty(string property)
     {
         if (string.Equals(property, "background", StringComparison.OrdinalIgnoreCase))
@@ -199,7 +248,7 @@ internal sealed class CssConverter
     {
         if (string.Equals(property, "-unity-font", StringComparison.OrdinalIgnoreCase))
         {
-            return "\t-unity-font-definition: none;\n";
+            return "\t-unity-font-definition: resource();\n";
         }
 
         return string.Empty;

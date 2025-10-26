@@ -122,6 +122,9 @@ internal sealed class UssStylesheetParser
             text = text.Replace("!important", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
         }
 
+        // Handle Unity-specific conversions
+        text = ConvertValueForUnity(property, text);
+
         var fragment = CreateFragment(text);
         var fragments = fragment is null ? Array.Empty<UssValueFragment>() : new[] { fragment };
 
@@ -131,6 +134,51 @@ internal sealed class UssStylesheetParser
             Important = important,
             Value = fragments,
         };
+    }
+
+    private static string ConvertValueForUnity(string property, string value)
+    {
+        return property.ToLowerInvariant() switch
+        {
+            "-unity-font" or "-unity-font-definition" => "resource()", // Unity expects resource references for fonts
+            "border-top-left-radius" or "border-top-right-radius" or "border-bottom-right-radius" or "border-bottom-left-radius"
+                => ConvertBorderRadius(value),
+            "background-image" => ConvertBackgroundImage(value),
+            "font-size" => ConvertEmToPx(value),
+            _ => value
+        };
+    }
+
+    private static string ConvertBorderRadius(string value)
+    {
+        // Unity USS doesn't support shorthand border-radius with multiple values
+        // Take only the first value
+        var parts = value.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 0 ? parts[0] : value;
+    }
+
+    private static string ConvertBackgroundImage(string value)
+    {
+        // Unity doesn't support CSS gradients, convert to none or simple color
+        if (value.Contains("gradient", StringComparison.OrdinalIgnoreCase))
+        {
+            return "none";
+        }
+        return value;
+    }
+
+    private static string ConvertEmToPx(string value)
+    {
+        // Convert em units to pixels (assuming 16px = 1em as base)
+        if (value.EndsWith("em", StringComparison.OrdinalIgnoreCase))
+        {
+            if (double.TryParse(value[..^2], NumberStyles.Float, CultureInfo.InvariantCulture, out var emValue))
+            {
+                var pxValue = emValue * 16; // Standard conversion
+                return $"{pxValue:F0}px";
+            }
+        }
+        return value;
     }
 
     private static UssValueFragment? CreateFragment(string value)
@@ -270,17 +318,16 @@ internal sealed class UssStylesheetParser
 
     private static IEnumerable<UssSelectorSegment> TokenizeSelector(string selector)
     {
-        var characters = selector.AsSpan();
         var index = 0;
 
-        while (index < characters.Length)
+        while (index < selector.Length)
         {
-            var current = characters[index];
+            var current = selector[index];
 
             if (char.IsWhiteSpace(current))
             {
                 var start = index;
-                while (index < characters.Length && char.IsWhiteSpace(characters[index]))
+                while (index < selector.Length && char.IsWhiteSpace(selector[index]))
                 {
                     index++;
                 }
@@ -299,7 +346,7 @@ internal sealed class UssStylesheetParser
                 yield return new UssSelectorSegment
                 {
                     Type = UssSelectorSegmentType.Combinator,
-                    Value = characters[index++].ToString(),
+                    Value = selector[index++].ToString(),
                 };
                 continue;
             }
@@ -319,7 +366,7 @@ internal sealed class UssStylesheetParser
             {
                 var start = index;
                 index++;
-                while (index < characters.Length && IsIdentifierChar(characters[index]))
+                while (index < selector.Length && IsIdentifierChar(selector[index]))
                 {
                     index++;
                 }
@@ -340,33 +387,33 @@ internal sealed class UssStylesheetParser
                 var start = index;
                 var colonCount = 1;
                 index++;
-                if (index < characters.Length && characters[index] == ':')
+                if (index < selector.Length && selector[index] == ':')
                 {
                     colonCount++;
                     index++;
                 }
 
-                while (index < characters.Length && IsIdentifierChar(characters[index]))
+                while (index < selector.Length && IsIdentifierChar(selector[index]))
                 {
                     index++;
                 }
 
-                if (index < characters.Length && characters[index] == '(')
+                if (index < selector.Length && selector[index] == '(')
                 {
                     var depth = 0;
                     do
                     {
-                        if (characters[index] == '(')
+                        if (selector[index] == '(')
                         {
                             depth++;
                         }
-                        else if (characters[index] == ')')
+                        else if (selector[index] == ')')
                         {
                             depth--;
                         }
 
                         index++;
-                    } while (index < characters.Length && depth > 0);
+                    } while (index < selector.Length && depth > 0);
                 }
 
                 yield return new UssSelectorSegment
@@ -382,9 +429,9 @@ internal sealed class UssStylesheetParser
             {
                 var start = index;
                 index++;
-                while (index < characters.Length && characters[index] != ']')
+                while (index < selector.Length && selector[index] != ']')
                 {
-                    if (characters[index] == '\\' && index + 1 < characters.Length)
+                    if (selector[index] == '\\' && index + 1 < selector.Length)
                     {
                         index += 2;
                         continue;
@@ -393,7 +440,7 @@ internal sealed class UssStylesheetParser
                     index++;
                 }
 
-                if (index < characters.Length)
+                if (index < selector.Length)
                 {
                     index++;
                 }
@@ -410,7 +457,7 @@ internal sealed class UssStylesheetParser
             if (IsTypeCharacter(current))
             {
                 var start = index;
-                while (index < characters.Length && IsTypeCharacter(characters[index]))
+                while (index < selector.Length && IsTypeCharacter(selector[index]))
                 {
                     index++;
                 }
@@ -427,7 +474,7 @@ internal sealed class UssStylesheetParser
             yield return new UssSelectorSegment
             {
                 Type = UssSelectorSegmentType.Unknown,
-                Value = characters[index++].ToString(),
+                Value = selector[index++].ToString(),
             };
         }
     }

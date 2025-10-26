@@ -76,7 +76,7 @@ internal sealed class HtmlConverter
         {
             // Convert button text to text attribute
             var text = element.TextContent?.Trim();
-            if (!string.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text))
             {
                 // Self-closing button if no text content
                 valid = false;
@@ -113,7 +113,7 @@ internal sealed class HtmlConverter
         }
 
         // Handle self-closing tags properly
-        if (element.ChildNodes.Count == 0 && string.Equals(uiTag, "ui:Label", StringComparison.OrdinalIgnoreCase))
+        if (element.ChildNodes.Count() == 0 && string.Equals(uiTag, "ui:Label", StringComparison.OrdinalIgnoreCase))
         {
             // Self-closing label with text attribute
             builder.Insert(builder.Length - 1, '/');
@@ -131,7 +131,7 @@ internal sealed class HtmlConverter
         return node switch
         {
             IComment => string.Empty,
-            IText text => ConvertTextNode(textNode, parentUiTag),
+            IText text => ConvertTextNode(text, parentUiTag),
             IElement element => ConvertElement(element, parentUiTag),
             _ => ConvertChildren(node, parentUiTag)
         };
@@ -145,6 +145,18 @@ internal sealed class HtmlConverter
             builder.Append(ConvertNode(child, parentUiTag));
         }
         return builder.ToString();
+    }
+
+    private string ConvertTextNode(IText textNode, string? parentUiTag)
+    {
+        var text = textNode.TextContent ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        // Escape XML characters in text content
+        return EscapeXml(text);
     }
 
     private static string GetUiTag(IElement element)
