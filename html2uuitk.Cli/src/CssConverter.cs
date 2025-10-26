@@ -354,12 +354,28 @@ internal sealed class CssConverter
     private static string TakeFirstCommaSeparatedValue(string value)
     {
         // Unity doesn't support comma-separated multiple values for some properties
-        // Take only the first value before comma
-        var commaIndex = value.IndexOf(',');
-        if (commaIndex >= 0)
+        // Take only the first value before comma, but skip commas inside parentheses (like rgba())
+
+        var depth = 0;
+        for (var i = 0; i < value.Length; i++)
         {
-            return value[..commaIndex].Trim();
+            var c = value[i];
+
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if (c == ')')
+            {
+                depth--;
+            }
+            else if (c == ',' && depth == 0)
+            {
+                // Found a comma at depth 0 (not inside parentheses)
+                return value[..i].Trim();
+            }
         }
+
         return value;
     }
 
