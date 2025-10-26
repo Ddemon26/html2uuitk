@@ -186,6 +186,45 @@ internal sealed class CssConverter
                     continue;
                 }
 
+                // Try to convert unsupported properties to Unity USS equivalents
+                var unityEquivalent = TryConvertToUnityEquivalent(property, value);
+                if (unityEquivalent != null)
+                {
+                    foreach (var (unityProp, unityVal) in unityEquivalent)
+                    {
+                        builder.Append("    ")
+                               .Append(unityProp)
+                               .Append(": ")
+                               .Append(unityVal)
+                               .Append(";\n");
+                        validDeclarations++;
+                    }
+                    continue;
+                }
+
+                // Fallback for unsupported properties - try to get basic equivalent
+                var fallback = TryGetFallbackProperty(property, value);
+                if (fallback != null)
+                {
+                    foreach (var (fallbackProp, fallbackVal) in fallback)
+                    {
+                        // Check if fallback property is supported
+                        if (_ussProperties.TryGetValue(fallbackProp, out var fallbackMeta) && fallbackMeta.Native)
+                        {
+                            var translated = TranslateValue(fallbackVal, fallbackProp);
+                            if (!string.IsNullOrWhiteSpace(translated))
+                            {
+                                builder.Append("    ")
+                                       .Append(fallbackProp)
+                                       .Append(": ")
+                                       .Append(translated)
+                                       .Append(";\n");
+                                validDeclarations++;
+                            }
+                        }
+                    }
+                }
+
                 if (_ussProperties.TryGetValue(property, out var metadata))
                 {
                     if (metadata.Native)
@@ -457,6 +496,589 @@ internal sealed class CssConverter
         }
 
         return selector;
+    }
+
+    private static List<(string property, string value)>? TryConvertToUnityEquivalent(string property, string value)
+    {
+        // Convert unsupported CSS properties to Unity USS equivalents where possible
+        var lowerProp = property.ToLowerInvariant();
+
+        return lowerProp switch
+        {
+            // Display properties
+            "display" when value.Contains("flex", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("flex-direction", ConvertFlexDirection(value)),
+                ("align-items", "center"),
+                ("justify-content", "flex-start")
+            },
+            "display" when value.Contains("grid", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("flex-direction", "row")
+            },
+            "display" when value.Contains("block", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("flex-direction", "column")
+            },
+            "display" when value.Contains("inline-block", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("flex-direction", "row")
+            },
+
+            // Flex properties
+            "flex-direction" => new List<(string, string)>
+            {
+                ("flex-direction", ConvertFlexDirection(value))
+            },
+            "justify-content" => new List<(string, string)>
+            {
+                ("justify-content", ConvertJustifyContent(value))
+            },
+            "align-items" => new List<(string, string)>
+            {
+                ("align-items", ConvertAlignItems(value))
+            },
+            "align-content" => new List<(string, string)>
+            {
+                ("align-content", ConvertAlignItems(value))
+            },
+            "flex-wrap" when value.Contains("wrap", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("flex-wrap", "wrap")
+            },
+            "flex-grow" => new List<(string, string)>
+            {
+                ("flex-grow", value)
+            },
+            "flex-shrink" => new List<(string, string)>
+            {
+                ("flex-shrink", value)
+            },
+            "flex-basis" => new List<(string, string)>
+            {
+                ("flex-basis", ConvertRemOrEmToPx(value))
+            },
+            "align-self" => new List<(string, string)>
+            {
+                ("align-self", ConvertAlignItems(value))
+            },
+
+            // Text properties
+            "text-align" => new List<(string, string)>
+            {
+                ("-unity-text-align", ConvertTextAlign(value))
+            },
+            "text-decoration" when value.Contains("underline", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-text-decoration", "underline")
+            },
+            "text-decoration" when value.Contains("line-through", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-text-decoration", "line-through")
+            },
+            "text-transform" when value.Contains("uppercase", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-font-style", "bold")
+            },
+            "white-space" when value.Contains("nowrap", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("white-space", "nowrap")
+            },
+            "line-height" => new List<(string, string)>
+            {
+                ("-unity-line-height", ConvertRemOrEmToPx(value))
+            },
+            "word-break" when value.Contains("break", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("white-space", "normal")
+            },
+            "text-overflow" when value.Contains("ellipsis", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-text-overflow", "ellipsis")
+            },
+
+            // Visual effects
+            "opacity" => new List<(string, string)>
+            {
+                ("opacity", value)
+            },
+            "visibility" when value.Contains("hidden", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("display", "none")
+            },
+            "box-shadow" when !string.IsNullOrWhiteSpace(value) && !value.Equals("none", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-box-shadow", ConvertBoxShadow(value))
+            },
+            "filter" when value.Contains("blur", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-background-scale-mode", "stretch-to-fit")
+            },
+
+            // Layout properties
+            "float" when value.Contains("left", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("position", "absolute"),
+                ("left", "0")
+            },
+            "float" when value.Contains("right", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("position", "absolute"),
+                ("right", "0")
+            },
+            "clear" => new List<(string, string)>
+            {
+                ("margin-bottom", "0")
+            },
+
+            // Sizing and spacing
+            "min-width" => new List<(string, string)>
+            {
+                ("min-width", ConvertRemOrEmToPx(value))
+            },
+            "max-width" => new List<(string, string)>
+            {
+                ("max-width", ConvertRemOrEmToPx(value))
+            },
+            "min-height" => new List<(string, string)>
+            {
+                ("min-height", ConvertRemOrEmToPx(value))
+            },
+            "max-height" => new List<(string, string)>
+            {
+                ("max-height", ConvertRemOrEmToPx(value))
+            },
+            "box-sizing" when value.Contains("border-box", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-overflow-clip-box", "border-box")
+            },
+
+            // Border properties
+            "border-collapse" when value.Contains("collapse", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("border-left-width", "0"),
+                ("border-right-width", "0")
+            },
+            "outline" when !string.IsNullOrWhiteSpace(value) && !value.Equals("none", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("border-left-width", "1px"),
+                ("border-right-width", "1px"),
+                ("border-top-width", "1px"),
+                ("border-bottom-width", "1px")
+            },
+
+            // Background properties (enhanced)
+            "background-repeat" when value.Contains("no-repeat", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-background-scale-mode", "scale-to-fit")
+            },
+            "background-position" => new List<(string, string)>
+            {
+                ("-unity-background-position", ConvertBackgroundPosition(value))
+            },
+            "background-attachment" when value.Contains("fixed", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-background-scale-mode", "stretch-to-fit")
+            },
+
+            // User interaction
+            "user-select" when value.Contains("none", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("cursor", "default")
+            },
+            "pointer-events" when value.Contains("none", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("picking-mode", "Ignore")
+            },
+            "cursor" => new List<(string, string)>
+            {
+                ("cursor", ConvertCursor(value))
+            },
+            "resize" when value.Contains("both", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-overflow-clip-box", "content-box")
+            },
+
+            // Transform properties (basic support)
+            "transform" when !string.IsNullOrWhiteSpace(value) && !value.Equals("none", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("transform", ConvertTransform(value))
+            },
+            "transform-origin" => new List<(string, string)>
+            {
+                ("transform-origin", ConvertTransformOrigin(value))
+            },
+
+            // List properties
+            "list-style-type" when value.Contains("none", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-list-style-type", "none")
+            },
+            "list-style-position" when value.Contains("inside", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("-unity-list-style-position", "inside")
+            },
+
+            // Overflow properties
+            "overflow-x" or "overflow-y" => new List<(string, string)>
+            {
+                ("overflow", ConvertOverflow(value))
+            },
+
+            // Unity theme variable mappings
+            "border-radius" => new List<(string, string)>
+            {
+                ("-unity-border-radius", ConvertRemOrEmToPx(TakeFirstCommaSeparatedValue(value)))
+            },
+            "transition" when !string.IsNullOrWhiteSpace(value) => new List<(string, string)>
+            {
+                ("transition", ConvertTransition(value))
+            },
+
+            _ => null
+        };
+    }
+
+    private static string ConvertTextAlign(string value)
+    {
+        return value.ToLowerInvariant() switch
+        {
+            "left" => "upper-left",
+            "center" => "upper-center",
+            "right" => "upper-right",
+            "justify" => "upper-left",
+            _ => value
+        };
+    }
+
+    private static string ConvertFlexDirection(string value)
+    {
+        return value.ToLowerInvariant() switch
+        {
+            "row" or "row-reverse" => "row",
+            "column" or "column-reverse" => "column",
+            _ => "row"
+        };
+    }
+
+    private static string ConvertJustifyContent(string value)
+    {
+        return value.ToLowerInvariant() switch
+        {
+            "flex-start" or "start" => "flex-start",
+            "flex-end" or "end" => "flex-end",
+            "center" => "center",
+            "space-between" => "space-between",
+            "space-around" => "space-around",
+            "space-evenly" => "space-around",
+            _ => "flex-start"
+        };
+    }
+
+    private static string ConvertAlignItems(string value)
+    {
+        return value.ToLowerInvariant() switch
+        {
+            "flex-start" or "start" => "flex-start",
+            "flex-end" or "end" => "flex-end",
+            "center" => "center",
+            "baseline" => "center",
+            "stretch" => "stretch",
+            _ => "center"
+        };
+    }
+
+    private static string ConvertBoxShadow(string value)
+    {
+        // Simple box-shadow conversion - take the first 3 values (x-offset, y-offset, blur)
+        var parts = value.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            var result = new List<string>();
+            for (int i = 0; i < Math.Min(3, parts.Length); i++)
+            {
+                var part = ConvertRemOrEmToPx(parts[i]);
+                if (part.EndsWith("px", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Convert to numeric values only
+                    var numeric = part[..^2];
+                    if (double.TryParse(numeric, NumberStyles.Float, CultureInfo.InvariantCulture, out var num))
+                    {
+                        result.Add(num.ToString("F1", CultureInfo.InvariantCulture));
+                    }
+                }
+            }
+            if (result.Count >= 2)
+            {
+                return string.Join(" ", result) + " 2px rgba(0,0,0,0.2)";
+            }
+        }
+        return "2px 2px 4px rgba(0,0,0,0.2)";
+    }
+
+    private static string ConvertBackgroundPosition(string value)
+    {
+        return value.ToLowerInvariant() switch
+        {
+            "center" or "center center" => "center",
+            "top" or "top center" or "center top" => "top",
+            "bottom" or "bottom center" or "center bottom" => "bottom",
+            "left" or "left center" or "center left" => "left",
+            "right" or "right center" or "center right" => "right",
+            _ => "center"
+        };
+    }
+
+    private static string ConvertCursor(string value)
+    {
+        return value.ToLowerInvariant() switch
+        {
+            "pointer" => "link",
+            "grab" or "grabbing" => "resize-vertical",
+            "text" => "text",
+            "move" => "move",
+            "not-allowed" => "default",
+            "wait" => "default",
+            "help" => "default",
+            "crosshair" => "default",
+            "progress" => "default",
+            _ => "default"
+        };
+    }
+
+    private static string ConvertTransform(string value)
+    {
+        // Very basic transform support - only handle simple translations
+        if (value.Contains("translate", StringComparison.OrdinalIgnoreCase))
+        {
+            // Extract numeric values from translate function
+            var match = Regex.Match(value, @"translate\(([^)]+)\)", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                var coords = match.Groups[1].Value;
+                var parts = coords.Split(',');
+                if (parts.Length >= 1)
+                {
+                    var x = ConvertRemOrEmToPx(parts[0].Trim());
+                    return $"translate({x}, 0px)";
+                }
+            }
+        }
+        return "none";
+    }
+
+    private static string ConvertTransformOrigin(string value)
+    {
+        return value.ToLowerInvariant() switch
+        {
+            "center" or "center center" => "center",
+            "top" or "top center" => "top center",
+            "bottom" or "bottom center" => "bottom center",
+            "left" or "left center" => "center left",
+            "right" or "right center" => "center right",
+            _ => "center"
+        };
+    }
+
+    private static string ConvertOverflow(string value)
+    {
+        return value.ToLowerInvariant() switch
+        {
+            "hidden" => "hidden",
+            "scroll" => "scroll",
+            "auto" => "scroll",
+            "visible" => "visible",
+            _ => "visible"
+        };
+    }
+
+    private static string ConvertTransition(string value)
+    {
+        // Simplified transition - just take the duration and property
+        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            var duration = ConvertRemOrEmToPx(parts[1]);
+            return $"all {duration} ease";
+        }
+        return "all 0.2s ease";
+    }
+
+    private static List<(string property, string value)>? TryGetFallbackProperty(string property, string value)
+    {
+        // Fallback system for completely unsupported properties
+        // This provides basic Unity equivalents to prevent empty style classes
+        var lowerProp = property.ToLowerInvariant();
+
+        return lowerProp switch
+        {
+            // Animation fallbacks
+            "animation" when !string.IsNullOrWhiteSpace(value) => new List<(string, string)>
+            {
+                ("opacity", "1") // Basic animation support
+            },
+            "animation-delay" or "animation-duration" or "animation-fill-mode"
+            or "animation-iteration-count" or "animation-name" or "animation-timing-function"
+                => new List<(string, string)>
+                {
+                    ("opacity", "1")
+                },
+
+            // Advanced layout fallbacks
+            "grid-template-columns" or "grid-template-rows" => new List<(string, string)>
+            {
+                ("flex-direction", "row")
+            },
+            "grid-gap" or "grid-column-gap" or "grid-row-gap" => new List<(string, string)>
+            {
+                ("margin", ConvertRemOrEmToPx(value))
+            },
+            "grid-area" or "grid-column" or "grid-row" => new List<(string, string)>
+            {
+                ("flex-grow", "1")
+            },
+
+            // Multi-column layout fallbacks
+            "column-count" when value.Contains("2", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("flex-direction", "row")
+            },
+            "column-gap" => new List<(string, string)>
+            {
+                ("margin-right", ConvertRemOrEmToPx(value))
+            },
+
+            // Advanced text fallbacks
+            "writing-mode" => new List<(string, string)>
+            {
+                ("flex-direction", "column")
+            },
+            "text-indent" => new List<(string, string)>
+            {
+                ("margin-left", ConvertRemOrEmToPx(value))
+            },
+            "letter-spacing" when value.Contains("normal", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("letter-spacing", "0px")
+            },
+            "word-spacing" => new List<(string, string)>
+            {
+                ("letter-spacing", ConvertRemOrEmToPx(value))
+            },
+
+            // Border and outline fallbacks
+            "border-style" when !value.Equals("none", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("border-width", "1px")
+            },
+            "outline-style" when !value.Equals("none", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("border-width", "1px")
+            },
+            "outline-width" => new List<(string, string)>
+            {
+                ("border-width", ConvertRemOrEmToPx(value))
+            },
+            "outline-color" => new List<(string, string)>
+            {
+                ("border-color", value)
+            },
+            "outline-offset" => new List<(string, string)>
+            {
+                ("margin", ConvertRemOrEmToPx(value))
+            },
+
+            // Size and dimension fallbacks
+            "aspect-ratio" => new List<(string, string)>
+            {
+                ("width", "100px"),
+                ("height", "100px")
+            },
+            "object-fit" => new List<(string, string)>
+            {
+                ("-unity-image-size", "scale-to-fit")
+            },
+            "object-position" => new List<(string, string)>
+            {
+                ("-unity-image-position", "center")
+            },
+
+            // Advanced visual fallbacks
+            "backdrop-filter" => new List<(string, string)>
+            {
+                ("opacity", "0.9")
+            },
+            "mix-blend-mode" => new List<(string, string)>
+            {
+                ("opacity", "0.9")
+            },
+            "isolation" => new List<(string, string)>
+            {
+                ("opacity", "1")
+            },
+
+            // Table properties fallbacks
+            "table-layout" => new List<(string, string)>
+            {
+                ("width", "auto")
+            },
+            "border-spacing" => new List<(string, string)>
+            {
+                ("margin", ConvertRemOrEmToPx(value))
+            },
+
+            // Advanced positioning fallbacks
+            "z-index" => new List<(string, string)>
+            {
+                ("position", "relative")
+            },
+
+            // Clip and mask fallbacks
+            "clip" or "clip-path" => new List<(string, string)>
+            {
+                ("overflow", "hidden")
+            },
+
+            // Print and page fallbacks
+            "page-break-after" or "page-break-before" => new List<(string, string)>
+            {
+                ("margin-bottom", "10px")
+            },
+
+            // Scroll behavior fallbacks
+            "scroll-behavior" when value.Contains("smooth", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("overflow", "scroll")
+            },
+
+            // Advanced selection fallbacks
+            "::selection" or "::-moz-selection" => new List<(string, string)>
+            {
+                ("color", "white"),
+                ("background-color", "blue")
+            },
+
+            // CSS variables fallbacks (if -- prefix is missing but property looks like a variable)
+            _ when property.Contains("color", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("color", value)
+            },
+            _ when property.Contains("size", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("width", ConvertRemOrEmToPx(value)),
+                ("height", ConvertRemOrEmToPx(value))
+            },
+            _ when property.Contains("width", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("width", ConvertRemOrEmToPx(value))
+            },
+            _ when property.Contains("height", StringComparison.OrdinalIgnoreCase) => new List<(string, string)>
+            {
+                ("height", ConvertRemOrEmToPx(value))
+            },
+
+            _ => null
+        };
     }
 
     private static bool HasUnsupportedPseudoElement(string selector)
