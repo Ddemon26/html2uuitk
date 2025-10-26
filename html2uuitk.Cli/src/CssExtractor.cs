@@ -115,84 +115,71 @@ internal sealed class CssExtractor
         // Remove CDATA sections if present
         css = Regex.Replace(css, @"<!\[CDATA\[(.*?)\]\]>", "$1", RegexOptions.Singleline);
 
-        // Handle CSS @layer rules - flatten them for better compatibility
-        css = ProcessCssLayers(css);
-
-        // Handle @property rules - convert to comments with fallback
-        css = ProcessPropertyRules(css);
-
-        // Handle @counter-style rules - convert to comments
-        css = ProcessCounterStyleRules(css);
-
-        // Handle @supports and @container rules - flatten them
-        css = ProcessConditionalRules(css);
-
-        // Clean up excessive whitespace while preserving important formatting
-        css = Regex.Replace(css, @"\s+", " ");
-        css = Regex.Replace(css, @";\s*}", "; }");
-        css = Regex.Replace(css, @"{\s*", " { ");
-        css = Regex.Replace(css, @";\s*", "; ");
-        css = Regex.Replace(css, @":\s*", ": ");
-
-        // Restore line breaks for better readability (optional)
-        css = Regex.Replace(css, @"}", "}\n");
-        css = Regex.Replace(css, @";", ";\n");
+        // Format CSS for better readability
+        css = FormatCss(css);
 
         return css.Trim();
     }
 
-    private static string ProcessCssLayers(string css)
+    private static string FormatCss(string css)
     {
-        // Handle complex @layer rules by extracting content from nested layers
-        // This preserves the CSS content within layers but makes it compatible with ExCSS
+        // First, add spacing around braces and semicolons to make it easier to parse
+        css = Regex.Replace(css, @"{", " {\n    ");
+        css = Regex.Replace(css, @";", ";\n    ");
+        css = Regex.Replace(css, @"}", "\n}\n\n");
 
-        // First, handle the layer declaration list (e.g., @layer reset, base, components;)
-        var layerDeclPattern = new Regex(@"@layer\s+[^{]*;", RegexOptions.Singleline);
-        css = layerDeclPattern.Replace(css, "");
+        // Split into lines and format properly
+        var lines = css.Split('\n');
+        var result = new StringBuilder();
+        var inBlock = false;
+        var indentLevel = 0;
 
-        // Then handle layer blocks (e.g., @layer reset { ... })
-        var layerBlockPattern = new Regex(@"@layer\s+[\w\s-]*\{((?:[^{}]*\{[^{}]*\})*[^{}]*)\}", RegexOptions.Singleline);
-        css = layerBlockPattern.Replace(css, match =>
+        foreach (var line in lines)
         {
-            // Extract the content within the layer block
-            var content = match.Groups[1].Value;
-            return content;
-        });
+            var trimmed = line.Trim();
+            if (string.IsNullOrEmpty(trimmed)) continue;
 
-        return css;
+            // Handle CSS blocks
+            if (trimmed.Contains("{") && !trimmed.Contains("@"))
+            {
+                result.AppendLine(trimmed);
+                inBlock = true;
+                indentLevel = 1;
+            }
+            else if (trimmed == "}" && inBlock)
+            {
+                result.AppendLine(trimmed);
+                inBlock = false;
+                indentLevel = 0;
+            }
+            else if (inBlock && trimmed.Contains(":"))
+            {
+                // Format CSS declarations with proper indentation
+                var parts = trimmed.Split(new[] { ':' }, 2);
+                if (parts.Length == 2)
+                {
+                    var property = parts[0].Trim();
+                    var value = parts[1].Trim();
+                    result.AppendLine($"    {property}: {value};");
+                }
+            }
+            else
+            {
+                result.AppendLine(trimmed);
+            }
+        }
+
+        // Clean up the result
+        var formatted = result.ToString();
+        formatted = Regex.Replace(formatted, @"\n\s*\n\s*\n", "\n\n");
+        formatted = Regex.Replace(formatted, @"^\s+|\s+$", "", RegexOptions.Multiline);
+        // Fix double semicolons
+        formatted = Regex.Replace(formatted, @";;", ";");
+
+        return formatted.Trim();
     }
 
-    private static string ProcessPropertyRules(string css)
-    {
-        // Convert @property rules to comments with fallback values
-        var propertyPattern = new Regex(@"@property\s+--[\w-]+\s*\{[^}]*initial-value:\s*([^;]+);[^}]*\}", RegexOptions.Singleline);
-        return propertyPattern.Replace(css, match =>
-        {
-            var initialValue = match.Groups[1].Value.Trim();
-            return $"/* @property rule - fallback value: {initialValue} */";
-        });
-    }
-
-    private static string ProcessCounterStyleRules(string css)
-    {
-        // Convert @counter-style rules to comments
-        var counterStylePattern = new Regex(@"@counter-style\s+[^{]+\{[^}]*\}", RegexOptions.Singleline);
-        return counterStylePattern.Replace(css, match => $"/* {match.Value} */");
-    }
-
-    private static string ProcessConditionalRules(string css)
-    {
-        // Flatten @supports and @container rules
-        var supportsPattern = new Regex(@"@supports\s*\([^)]*\)\s*\{([^}]*)\}", RegexOptions.Singleline);
-        css = supportsPattern.Replace(css, "$1");
-
-        var containerPattern = new Regex(@"@container\s*\([^)]*\)\s*\{([^}]*)\}", RegexOptions.Singleline);
-        css = containerPattern.Replace(css, "$1");
-
-        return css;
-    }
-
-    public static string CombineExtractedCss(ExtractedCss extractedCss)
+      public static string CombineExtractedCss(ExtractedCss extractedCss)
     {
         var combinedCss = new StringBuilder();
 
