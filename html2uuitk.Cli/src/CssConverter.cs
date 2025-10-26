@@ -33,8 +33,111 @@ internal sealed class CssConverter
         // This prevents ExCSS from silently failing to parse entire rules
         cssContent = PreprocessUnsupportedPseudoClasses(cssContent);
 
-        var stylesheet = _parser.Parse(cssContent);
-        return CssToUss(stylesheet.StyleRules);
+        // Extract CSS custom properties before ExCSS parsing (ExCSS doesn't handle them well)
+        var (preprocessedCss, customProperties) = ExtractCustomProperties(cssContent);
+
+        var stylesheet = _parser.Parse(preprocessedCss);
+        return CssToUss(stylesheet.StyleRules, customProperties);
+    }
+
+    private static (string preprocessedCss, Dictionary<string, Dictionary<string, string>> customProperties) ExtractCustomProperties(string css)
+    {
+        var customProps = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+        var result = css;
+
+        // Pattern to match CSS rules with custom properties
+        var customPropertyPattern = new Regex(@"([^{]+)\{([^}]+)\}", RegexOptions.Compiled);
+        var mediaQueryPattern = new Regex(@"@media[^{]+\{([\s\S]*?)\}\s*\}", RegexOptions.Compiled);
+
+        // First, handle media queries that might contain :root rules
+        result = mediaQueryPattern.Replace(result, match =>
+        {
+            var fullMediaQuery = match.Value;
+            var mediaContent = match.Groups[1].Value;
+            var processedContent = ExtractCustomPropertiesFromContent(mediaContent, customProps, "media-content");
+            return fullMediaQuery.Replace(mediaContent, processedContent.preprocessedRule);
+        });
+
+        // Then handle regular rules
+        result = customPropertyPattern.Replace(result, match =>
+        {
+            var selector = match.Groups[1].Value.Trim();
+            var declarations = match.Groups[2].Value.Trim();
+
+            // Check if this rule contains custom properties
+            if (selector.Contains(":root") || declarations.Contains("--"))
+            {
+                var processedContent = ExtractCustomPropertiesFromContent(match.Value, customProps, selector);
+                return processedContent.preprocessedRule;
+            }
+
+            return match.Value;
+        });
+
+        return (result, customProps);
+    }
+
+    private static (string preprocessedRule, bool hasCustomProperties) ExtractCustomPropertiesFromContent(
+        string content, Dictionary<string, Dictionary<string, string>> customProps, string selector)
+    {
+        var declarationPattern = new Regex(@"(--[\w-]+)\s*:\s*([^;]+);", RegexOptions.Compiled);
+        var declarations = new List<string>();
+        var foundCustomProps = false;
+        var processedSelector = selector.Trim();
+
+        // Handle the entire content block
+        var rulePattern = new Regex(@"([^{]+)\{([^}]+)\}", RegexOptions.Compiled);
+        var ruleMatch = rulePattern.Match(content);
+
+        if (ruleMatch.Success)
+        {
+            var ruleSelector = ruleMatch.Groups[1].Value.Trim();
+            var ruleDeclarations = ruleMatch.Groups[2].Value;
+
+            // Extract custom properties from this rule
+            var customDeclarations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var otherDeclarations = new List<string>();
+
+            foreach (Match match in declarationPattern.Matches(ruleDeclarations))
+            {
+                var prop = match.Groups[1].Value.Trim();
+                var value = match.Groups[2].Value.Trim();
+                customDeclarations[prop] = value;
+                foundCustomProps = true;
+            }
+
+            // If we found custom properties, store them and remove them from the rule
+            if (customDeclarations.Count > 0)
+            {
+                var key = ruleSelector.Contains(":root") ? ":root" : ruleSelector;
+                if (!customProps.ContainsKey(key))
+                {
+                    customProps[key] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                foreach (var (prop, value) in customDeclarations)
+                {
+                    customProps[key][prop] = value;
+                }
+
+                // Remove custom properties from the original declarations
+                var cleanedDeclarations = declarationPattern.Replace(ruleDeclarations, "").Trim();
+                cleanedDeclarations = Regex.Replace(cleanedDeclarations, @"\s*;\s*;", ";", RegexOptions.Compiled);
+                cleanedDeclarations = cleanedDeclarations.TrimEnd(';').Trim();
+
+                if (!string.IsNullOrWhiteSpace(cleanedDeclarations))
+                {
+                    return ($"{ruleSelector} {{ {cleanedDeclarations}; }}", true);
+                }
+                else
+                {
+                    // Return empty rule that will be filtered out later
+                    return ("__empty__ { }", true);
+                }
+            }
+        }
+
+        return (content, foundCustomProps);
     }
 
     private static string PreprocessUnsupportedPseudoClasses(string css)
@@ -87,7 +190,7 @@ internal sealed class CssConverter
         });
     }
 
-    private string CssToUss(IEnumerable<IStyleRule> rules)
+    private string CssToUss(IEnumerable<IStyleRule> rules, Dictionary<string, Dictionary<string, string>> customProperties)
     {
         var result = new StringBuilder();
         var notImplemented = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -120,6 +223,9 @@ internal sealed class CssConverter
                         isValidSegment = false;
                         break;
                     }
+
+                    // Handle attribute selectors - convert them to simple class selectors where possible
+                    segment = ConvertAttributeSelectors(segment);
 
                     // Filter out unsupported pseudo-classes
                     if (HasUnsupportedPseudoClass(segment))
@@ -158,7 +264,25 @@ internal sealed class CssConverter
             var finalSelectorText = string.Join(", ", validSegments);
             var builder = new StringBuilder();
 
-            builder.Append(finalSelectorText.Equals("body", StringComparison.OrdinalIgnoreCase) ? ":root" : finalSelectorText)
+            // Handle special selector transformations
+            var transformedSelector = finalSelectorText switch
+            {
+                "body" => ":root",
+                "*" when validSegments.Count == 1 => "*", // Keep universal selector if it's the only one
+                "*" => "", // Remove universal selector if there are other selectors
+                _ => finalSelectorText
+            };
+
+            // Handle :root selectors - inject custom properties
+            var isRootSelector = transformedSelector.Equals(":root", StringComparison.OrdinalIgnoreCase) ||
+                                 transformedSelector.Contains(":root") ||
+                                 transformedSelector.Contains("root");
+
+            // Skip if selector is empty after transformation
+            if (string.IsNullOrWhiteSpace(transformedSelector))
+                continue;
+
+            builder.Append(transformedSelector)
                    .Append(" {\n");
 
             var validDeclarations = 0;
@@ -166,22 +290,45 @@ internal sealed class CssConverter
             // Get declarations using reflection
             var declarations = ExCssReflection.GetDeclarations(rule);
 
+            // For :root selectors, add custom properties first
+            if (isRootSelector && customProperties.TryGetValue(":root", out var rootCustomProps))
+            {
+                foreach (var (prop, value) in rootCustomProps)
+                {
+                    var cleanValue = CleanCssCustomPropertyValue(value);
+                    if (!string.IsNullOrWhiteSpace(cleanValue))
+                    {
+                        builder.Append("    ")
+                               .Append(prop)
+                               .Append(": ")
+                               .Append(cleanValue)
+                               .Append(";\n");
+                        validDeclarations++;
+                    }
+                }
+            }
+
             foreach (var declaration in declarations)
             {
                 var property = TransformProperty(declaration.Key);
                 var value = declaration.Value;
 
-                // CSS custom properties (variables) - Unity USS supports these
+                        // CSS custom properties (variables) - Unity USS supports these
                 if (property.StartsWith("--", StringComparison.Ordinal))
                 {
                     if (!string.IsNullOrWhiteSpace(value))
                     {
-                        builder.Append("    ")
-                               .Append(property)
-                               .Append(": ")
-                               .Append(value)
-                               .Append(";\n");
-                        validDeclarations++;
+                        // Clean up the value to ensure it's USS-compatible
+                        var cleanValue = CleanCssCustomPropertyValue(value);
+                        if (!string.IsNullOrWhiteSpace(cleanValue))
+                        {
+                            builder.Append("    ")
+                                   .Append(property)
+                                   .Append(": ")
+                                   .Append(cleanValue)
+                                   .Append(";\n");
+                            validDeclarations++;
+                        }
                     }
                     continue;
                 }
@@ -458,6 +605,64 @@ internal sealed class CssConverter
         }
 
         return null;
+    }
+
+    private static string ConvertAttributeSelectors(string selector)
+    {
+        // Convert attribute selectors to class selectors where possible
+        // Unity USS doesn't support attribute selectors, so we convert common patterns
+
+        var attributePattern = new Regex(@"(\w+|\*)\[([^\]]+)\]");
+        var matches = attributePattern.Matches(selector);
+
+        if (matches.Count == 0)
+            return selector;
+
+        var result = selector;
+
+        foreach (Match match in matches)
+        {
+            var baseSelector = match.Groups[1].Value;
+            var attribute = match.Groups[2].Value;
+
+            // Handle common ARIA and HTML attribute patterns
+            var replacement = attribute switch
+            {
+                // ARIA attributes
+                "aria-disabled=\"true\"" => $"{baseSelector}.disabled",
+                "aria-disabled=\"false\"" => baseSelector,
+                "aria-selected=\"true\"" => $"{baseSelector}.selected",
+                "aria-selected=\"false\"" => baseSelector,
+                "aria-checked=\"true\"" => $"{baseSelector}.checked",
+                "aria-checked=\"false\"" => baseSelector,
+                "aria-expanded=\"true\"" => $"{baseSelector}.expanded",
+                "aria-expanded=\"false\"" => baseSelector,
+
+                // HTML attributes
+                "disabled" => $"{baseSelector}.disabled",
+                "checked" => $"{baseSelector}.checked",
+                "selected" => $"{baseSelector}.selected",
+                "readonly" or "read-only" => $"{baseSelector}.readonly",
+                "required" => $"{baseSelector}.required",
+
+                // Type attributes
+                "type=\"text\"" => $"{baseSelector}[text-type]",
+                "type=\"password\"" => $"{baseSelector}[password-type]",
+                "type=\"email\"" => $"{baseSelector}[email-type]",
+                "type=\"number\"" => $"{baseSelector}[number-type]",
+                "type=\"button\"" => $"{baseSelector}[button-type]",
+                "type=\"submit\"" => $"{baseSelector}[submit-type]",
+                "type=\"reset\"" => $"{baseSelector}[reset-type]",
+
+                // For other attributes, create a descriptive class name
+                _ when attribute.Contains("=") => $"{baseSelector}[{attribute.Replace("=", "-").Replace("\"", "").Replace("'", "")}]",
+                _ => $"{baseSelector}[{attribute}]"
+            };
+
+            result = result.Replace(match.Value, replacement);
+        }
+
+        return result;
     }
 
     private static string TransformSelectorWithPseudoClasses(string selector)
@@ -902,6 +1107,88 @@ internal sealed class CssConverter
             return $"all {duration} ease";
         }
         return "all 0.2s ease";
+    }
+
+    private static string CleanCssCustomPropertyValue(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var cleaned = value.Trim();
+
+        // Handle special cases for CSS custom properties
+        cleaned = cleaned switch
+        {
+            // Handle CSS colors and ensure they're valid
+            var v when v.StartsWith("#") && v.Length is 4 or 7 => v, // Hex colors
+            var v when v.StartsWith("rgb") => v, // rgb/rgba colors
+            var v when v.StartsWith("hsl") => v, // hsl/hsla colors
+
+            // Handle font families
+            var v when v.Contains("font-family") => v,
+
+            // Handle URLs and resources
+            var v when v.StartsWith("url(") => v,
+            var v when v.StartsWith("resource(") => v,
+
+            // Handle numeric values with units
+            var v when Regex.IsMatch(v, @"^-?\d+(\.\d+)?(px|em|rem|%|vh|vw|vmin|vmax|pt|pc|in|cm|mm|ex|ch|lh|rlh|vw|vh|vmin|vmax)$") => v,
+
+            // Handle plain numeric values
+            var v when Regex.IsMatch(v, @"^-?\d+(\.\d+)?$") => v,
+
+            // Handle keywords
+            var v when v.Equals("inherit", StringComparison.OrdinalIgnoreCase) => "inherit",
+            var v when v.Equals("initial", StringComparison.OrdinalIgnoreCase) => "initial",
+            var v when v.Equals("unset", StringComparison.OrdinalIgnoreCase) => "unset",
+            var v when v.Equals("revert", StringComparison.OrdinalIgnoreCase) => "revert",
+
+            // Handle complex values like gradients, shadows - keep as-is but clean up
+            _ => CleanComplexValue(cleaned)
+        };
+
+        return cleaned;
+    }
+
+    private static string CleanComplexValue(string value)
+    {
+        // Clean up complex CSS values for USS compatibility
+        var cleaned = value;
+
+        // Remove CSS functions that USS doesn't support
+        cleaned = Regex.Replace(cleaned, @"calc\([^)]*\)", "0px", RegexOptions.IgnoreCase);
+        cleaned = Regex.Replace(cleaned, @"var\([^)]*\)", "inherit", RegexOptions.IgnoreCase);
+        cleaned = Regex.Replace(cleaned, @"env\([^)]*\)", "inherit", RegexOptions.IgnoreCase);
+
+        // Handle gradient values - USS doesn't support them
+        if (cleaned.Contains("gradient", StringComparison.OrdinalIgnoreCase))
+        {
+            cleaned = "none";
+        }
+
+        // Handle box-shadow values - convert to simple format
+        if (cleaned.Contains("box-shadow", StringComparison.OrdinalIgnoreCase) ||
+            cleaned.Contains("rgba", StringComparison.OrdinalIgnoreCase) && cleaned.Contains("px"))
+        {
+            // Extract just the numeric parts and color for basic shadow
+            var parts = cleaned.Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var result = new List<string>();
+            var count = 0;
+            foreach (var part in parts)
+            {
+                if ((part.Contains("px") || part.Contains("rgba")) && count < 4)
+                {
+                    result.Add(part.Trim());
+                    count++;
+                }
+            }
+            if (result.Count > 0)
+            {
+                cleaned = string.Join(" ", result);
+            }
+        }
+
+        return cleaned.Trim();
     }
 
     private static List<(string property, string value)>? TryGetFallbackProperty(string property, string value)
