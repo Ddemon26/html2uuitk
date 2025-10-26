@@ -72,7 +72,7 @@ internal sealed class HtmlConverter
                 builder.Append(" text=\"").Append(EscapeXml(text)).Append('"');
             }
         }
-        else if (string.Equals(uiTag, "button", StringComparison.OrdinalIgnoreCase))
+        else if (string.Equals(uiTag, "ui:Button", StringComparison.OrdinalIgnoreCase))
         {
             // Convert button text to text attribute
             var text = element.TextContent?.Trim();
@@ -89,11 +89,15 @@ internal sealed class HtmlConverter
 
         foreach (var attribute in element.Attributes)
         {
-            builder.Append(' ')
-                   .Append(attribute.Name)
-                   .Append("=\"")
-                   .Append(EscapeXml(attribute.Value))
-                   .Append('"');
+            var (attrName, attrValue, shouldInclude) = TransformAttribute(attribute.Name, attribute.Value, uiTag);
+            if (shouldInclude)
+            {
+                builder.Append(' ')
+                       .Append(attrName)
+                       .Append("=\"")
+                       .Append(EscapeXml(attrValue))
+                       .Append('"');
+            }
         }
 
         if (string.Equals(uiTag, TagMappings.HtmlToUi["input"], StringComparison.OrdinalIgnoreCase)
@@ -106,10 +110,12 @@ internal sealed class HtmlConverter
 
         builder.Append('>');
 
-        // For labels with text content, don't process children (text is already in the attribute)
-        if (string.Equals(uiTag, "ui:Label", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(element.TextContent))
+        // For labels and buttons with text content, don't process children (text is already in the attribute)
+        if ((string.Equals(uiTag, "ui:Label", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(uiTag, "ui:Button", StringComparison.OrdinalIgnoreCase)) &&
+            !string.IsNullOrWhiteSpace(element.TextContent))
         {
-            // Self-closing label with text attribute
+            // Self-closing with text attribute
             builder.Insert(builder.Length - 1, '/');
         }
         else
@@ -163,8 +169,41 @@ internal sealed class HtmlConverter
             return string.Empty;
         }
 
-        // Escape XML characters in text content
+        // If the parent is a VisualElement, wrap text in a Label
+        if (string.Equals(parentUiTag, "ui:VisualElement", StringComparison.OrdinalIgnoreCase))
+        {
+            var trimmedText = text.Trim();
+            if (!string.IsNullOrEmpty(trimmedText))
+            {
+                return $"<ui:Label text=\"{EscapeXml(trimmedText)}\" />";
+            }
+            return string.Empty;
+        }
+
+        // For other parents (like Labels), return the escaped text directly
         return EscapeXml(text);
+    }
+
+    private static (string name, string value, bool shouldInclude) TransformAttribute(string attrName, string attrValue, string uiTag)
+    {
+        var lowerAttrName = attrName.ToLowerInvariant();
+
+        // Filter out invalid HTML attributes that Unity doesn't support
+        var invalidAttributes = new[] { "onclick", "onchange", "onload", "type", "min", "max", "step", "src", "href", "action", "method" };
+        if (invalidAttributes.Contains(lowerAttrName))
+        {
+            return (attrName, attrValue, false);
+        }
+
+        // Transform HTML attributes to Unity equivalents
+        return lowerAttrName switch
+        {
+            "id" => ("name", attrValue, true), // Convert id to name
+            "placeholder" => ("placeholder-text", attrValue, true), // Convert placeholder to placeholder-text
+            "class" => ("class", attrValue, true), // Keep class as-is
+            "style" => ("style", attrValue, true), // Keep style as-is (if needed)
+            _ => (attrName, attrValue, true) // Keep other attributes
+        };
     }
 
     private static string GetUiTag(IElement element)
