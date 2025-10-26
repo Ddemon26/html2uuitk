@@ -10,9 +10,16 @@ internal static class TagMappings
         ["div"] = "ui:VisualElement",
         ["p"] = "ui:Label",
         ["span"] = "ui:Label",
+        ["button"] = "ui:Button",
         ["input"] = "ui:TextField",
         ["input[type=\"text\"]"] = "ui:TextField",
+        ["input[type=\"number\"]"] = "ui:IntegerField",
+        ["input[type=\"password\"]"] = "ui:TextField",
+        ["input[type=\"email\"]"] = "ui:TextField",
         ["input[type=\"checkbox\"]"] = "ui:Toggle",
+        ["input[type=\"radio\"]"] = "ui:RadioButton",
+        ["input[type=\"range\"]"] = "ui:Slider",
+        ["input[type=\"file\"]"] = "ui:TextField",
         ["text"] = "ui:Label",
         ["h1"] = "ui:Label",
         ["h2"] = "ui:Label",
@@ -31,7 +38,18 @@ internal static class TagMappings
         ["cite"] = "ui:Label",
         ["code"] = "ui:Label",
         ["q"] = "ui:Label",
-        ["time"] = "ui:Label"
+        ["time"] = "ui:Label",
+        ["section"] = "ui:VisualElement",
+        ["article"] = "ui:VisualElement",
+        ["header"] = "ui:VisualElement",
+        ["footer"] = "ui:VisualElement",
+        ["main"] = "ui:VisualElement",
+        ["nav"] = "ui:VisualElement",
+        ["aside"] = "ui:VisualElement",
+        ["ul"] = "ui:VisualElement",
+        ["ol"] = "ui:VisualElement",
+        ["li"] = "ui:VisualElement",
+        ["form"] = "ui:VisualElement"
     };
 
     public static string? GetUiTagForSelector(string selector)

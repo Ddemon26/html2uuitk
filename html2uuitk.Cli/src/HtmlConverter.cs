@@ -106,21 +106,29 @@ internal sealed class HtmlConverter
 
         builder.Append('>');
 
-        foreach (var child in element.ChildNodes)
-        {
-            var portion = ConvertNode(child, uiTag);
-            builder.Append(portion);
-        }
-
-        // Handle self-closing tags properly
-        if (element.ChildNodes.Count() == 0 && string.Equals(uiTag, "ui:Label", StringComparison.OrdinalIgnoreCase))
+        // For labels with text content, don't process children (text is already in the attribute)
+        if (string.Equals(uiTag, "ui:Label", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(element.TextContent))
         {
             // Self-closing label with text attribute
             builder.Insert(builder.Length - 1, '/');
         }
         else
         {
-            builder.Append("</").Append(uiTag).Append('>');
+            foreach (var child in element.ChildNodes)
+            {
+                var portion = ConvertNode(child, uiTag);
+                builder.Append(portion);
+            }
+
+            // Handle self-closing tags for empty elements
+            if (element.ChildNodes.Count() == 0)
+            {
+                builder.Insert(builder.Length - 1, '/');
+            }
+            else
+            {
+                builder.Append("</").Append(uiTag).Append('>');
+            }
         }
 
         return valid ? builder.ToString() : string.Empty;
