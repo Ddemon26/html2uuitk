@@ -16,6 +16,8 @@ internal sealed class CliOptions
     public string? ResetCss { get; private set; }
     public string ConfigPath { get; private set; } = Path.Combine(AppContext.BaseDirectory, "config.json");
     public string OutputFolder { get; private set; } = string.Empty;
+    public bool ExtractCss { get; private set; } = true;
+    public string? CssOutputName { get; private set; }
 
     public static bool TryParse(string[] args, out CliOptions? options, out string? error)
     {
@@ -137,6 +139,46 @@ internal sealed class CliOptions
                         break;
                     }
 
+                case "--extract-css":
+                    {
+                        if (inlineValue is not null)
+                        {
+                            if (bool.TryParse(inlineValue, out var extractValue))
+                            {
+                                options.ExtractCss = extractValue;
+                            }
+                            else
+                            {
+                                error = "Option '--extract-css' must be 'true' or 'false'.";
+                                options = null;
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            options.ExtractCss = true;
+                        }
+
+                        break;
+                    }
+
+                case "--css-output-name":
+                    {
+                        try
+                        {
+                            var value = inlineValue ?? ConsumeSingle(args, ref i, flag);
+                            options.CssOutputName = value;
+                        }
+                        catch (InvalidDataException ex)
+                        {
+                            error = ex.Message;
+                            options = null;
+                            return false;
+                        }
+
+                        break;
+                    }
+
                 case "--help":
                 case "-h":
                     {
@@ -161,9 +203,9 @@ internal sealed class CliOptions
             return false;
         }
 
-        if (options.CssFiles.Count == 0)
+        if (options.CssFiles.Count == 0 && !options.ExtractCss)
         {
-            error = "At least one CSS file must be specified via '--css'.";
+            error = "At least one CSS file must be specified via '--css' or enable CSS extraction with '--extract-css'.";
             options = null;
             return false;
         }
@@ -230,15 +272,22 @@ internal sealed class CliOptions
     private static string GetUsage()
     {
         return """
-Usage: html2uuitk --input <files...> --css <files...> [--reset <file>] [--config <file>] --output <folder>
+Usage: html2uuitk --input <files...> [--css <files...>] [--reset <file>] [--config <file>] --output <folder> [--extract-css] [--css-output-name <name>]
 
 Options:
-  -i, --input     Input HTML files (one or more values).
-  --css           CSS files to convert (one or more values).
-  --reset         Optional reset CSS file appended to the CSS list.
-  -c, --config    Conversion configuration file (JSON). Defaults to config.json next to the executable.
-  -o, --output    Output folder for generated UXML and USS files.
-  -h, --help      Show this message.
+  -i, --input           Input HTML files (one or more values).
+  --css                 CSS files to convert (one or more values). Optional if CSS extraction is enabled.
+  --reset               Optional reset CSS file appended to the CSS list.
+  -c, --config          Conversion configuration file (JSON). Defaults to config.json next to the executable.
+  -o, --output          Output folder for generated UXML and USS files.
+  --extract-css         Extract CSS from <style> tags in HTML files (default: true).
+  --css-output-name     Custom filename for extracted CSS (without extension).
+  -h, --help            Show this message.
+
+Examples:
+  html2uuitk --input page.html --css styles.css --output output
+  html2uuitk --input single-file.html --output output                    # Auto-extract CSS
+  html2uuitk --input page.html --css extra.css --output output           # Mixed mode
 """;
     }
 

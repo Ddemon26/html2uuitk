@@ -78,6 +78,47 @@ catch (Exception ex)
     return 1;
 }
 
+// Extract CSS from HTML files if needed
+var extractedCssFiles = new List<string>();
+if (options.ExtractCss && options.CssFiles.Count == 0)
+{
+    Console.WriteLine("Extracting CSS from HTML files...");
+
+    foreach (var htmlPath in options.InputFiles)
+    {
+        try
+        {
+            var htmlContent = File.ReadAllText(htmlPath);
+            var extractedCss = CssExtractor.ExtractFromHtml(htmlContent, htmlPath);
+
+            if (extractedCss.HasCss)
+            {
+                // Generate CSS filename
+                var cssFileName = string.IsNullOrWhiteSpace(options.CssOutputName)
+                    ? $"{Path.GetFileNameWithoutExtension(htmlPath)}-styles"
+                    : options.CssOutputName;
+
+                var cssFilePath = Path.Combine(options.OutputFolder, $"{cssFileName}.css");
+                var combinedCss = extractedCss.GetCombinedCss();
+
+                File.WriteAllText(cssFilePath, combinedCss);
+                extractedCssFiles.Add(cssFilePath);
+
+                Console.WriteLine($"{Path.GetFileName(cssFilePath)} CSS extracted ✓");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Failed to extract CSS from '{htmlPath}': {ex.Message}");
+        }
+    }
+}
+
+// Combine explicit CSS files with extracted ones
+var allCssFiles = new List<string>(options.CssFiles);
+allCssFiles.AddRange(extractedCssFiles);
+
+// Process HTML files
 foreach (var htmlPath in options.InputFiles)
 {
     try
@@ -96,7 +137,7 @@ foreach (var htmlPath in options.InputFiles)
     }
 }
 
-var cssFiles = new List<string>(options.CssFiles);
+var cssFiles = new List<string>(allCssFiles);
 if (!string.IsNullOrEmpty(options.ResetCss))
 {
     cssFiles.Add(options.ResetCss);
