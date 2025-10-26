@@ -261,16 +261,6 @@ internal sealed class CssConverter
             return assetPath ?? string.Empty; // Return empty to omit the property
         }
 
-        if (string.Equals(property, "letter-spacing", StringComparison.OrdinalIgnoreCase))
-        {
-            if (normalized.EndsWith("px", StringComparison.OrdinalIgnoreCase)
-                && double.TryParse(normalized[..^2], NumberStyles.Float, CultureInfo.InvariantCulture, out var numeric))
-            {
-                var adjusted = Math.Round(numeric * 2, MidpointRounding.AwayFromZero);
-                return $"{adjusted.ToString("0", CultureInfo.InvariantCulture)}px";
-            }
-        }
-
         // Handle CSS custom properties for Unity
         if (property.StartsWith("--unity-", StringComparison.OrdinalIgnoreCase))
         {
@@ -290,8 +280,15 @@ internal sealed class CssConverter
                 => ConvertBorderRadius(value),
             "background-image" => ConvertBackgroundImage(value),
             "background-color" when value.Contains("gradient", StringComparison.OrdinalIgnoreCase) => "none",
-            "font-size" => ConvertEmToPx(value),
-            _ => value
+            "background-size" => TakeFirstCommaSeparatedValue(value),
+            "text-shadow" => TakeFirstCommaSeparatedValue(value),
+            "position" when value.Equals("fixed", StringComparison.OrdinalIgnoreCase) => "absolute",
+            "font-size" or "padding-top" or "padding-right" or "padding-bottom" or "padding-left"
+                or "margin-top" or "margin-right" or "margin-bottom" or "margin-left"
+                or "width" or "height" or "top" or "right" or "bottom" or "left"
+                => ConvertRemOrEmToPx(value),
+            "letter-spacing" => ConvertLetterSpacing(value),
+            _ => ConvertRemOrEmToPx(value) // Try converting all values with rem/em
         };
     }
 
@@ -313,8 +310,18 @@ internal sealed class CssConverter
         return value;
     }
 
-    private static string ConvertEmToPx(string value)
+    private static string ConvertRemOrEmToPx(string value)
     {
+        // Convert rem units to pixels (assuming 16px = 1rem as base)
+        if (value.EndsWith("rem", StringComparison.OrdinalIgnoreCase))
+        {
+            if (double.TryParse(value[..^3], NumberStyles.Float, CultureInfo.InvariantCulture, out var remValue))
+            {
+                var pxValue = remValue * 16; // Standard conversion
+                return $"{pxValue:F0}px";
+            }
+        }
+
         // Convert em units to pixels (assuming 16px = 1em as base)
         if (value.EndsWith("em", StringComparison.OrdinalIgnoreCase))
         {
@@ -323,6 +330,35 @@ internal sealed class CssConverter
                 var pxValue = emValue * 16; // Standard conversion
                 return $"{pxValue:F0}px";
             }
+        }
+
+        return value;
+    }
+
+    private static string ConvertLetterSpacing(string value)
+    {
+        // Unity letter-spacing needs pixel values, not em/rem
+        var converted = ConvertRemOrEmToPx(value);
+
+        // If it was already in px, double it (Unity letter-spacing works differently)
+        if (converted.EndsWith("px", StringComparison.OrdinalIgnoreCase)
+            && double.TryParse(converted[..^2], NumberStyles.Float, CultureInfo.InvariantCulture, out var numeric))
+        {
+            var adjusted = Math.Round(numeric * 2, MidpointRounding.AwayFromZero);
+            return $"{adjusted.ToString("0", CultureInfo.InvariantCulture)}px";
+        }
+
+        return converted;
+    }
+
+    private static string TakeFirstCommaSeparatedValue(string value)
+    {
+        // Unity doesn't support comma-separated multiple values for some properties
+        // Take only the first value before comma
+        var commaIndex = value.IndexOf(',');
+        if (commaIndex >= 0)
+        {
+            return value[..commaIndex].Trim();
         }
         return value;
     }
