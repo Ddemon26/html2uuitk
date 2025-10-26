@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertical Power Bar Element</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .power-bar-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 40px;
+            margin: 40px 0;
+        }
+
+        .power-bar-wrapper {
+            position: relative;
+            width: 100px;
+            height: 450px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .thermometer-top {
+            width: 80px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .power-bar {
+            position: relative;
+            width: 80px;
+            height: 400px;
+            background: #f8f8f8;
+            border: 3px solid #333;
+            border-top: none;
+            border-radius: 0 0 50px 50px;
+            overflow: hidden;
+        }
+
+        .power-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: #e74c3c;
+            transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.8s ease;
+            border-radius: 0 0 47px 47px;
+        }
+
+        .power-fill::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            filter: blur(3px);
+        }
+
+        .thermometer-bulb {
+            width: 100px;
+            height: 100px;
+            background: #333;
+            border-radius: 50%;
+            margin-top: -5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .thermometer-bulb::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
+            border-radius: 50%;
+        }
+
+        .thresholds {
+            position: absolute;
+            right: -120px;
+            top: 20px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .threshold {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .threshold-marker {
+            position: absolute;
+            left: -45px;
+            width: 35px;
+            height: 2px;
+            background: #e74c3c;
+            border-radius: 1px;
+        }
+
+        .threshold-value {
+            font-weight: bold;
+            margin-right: 8px;
+            color: #333;
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .percentage-display {
+            text-align: center;
+            font-size: 3em;
+            font-weight: bold;
+            margin-top: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .control-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .control-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .control-group h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 1.2em;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        button.danger:hover {
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
+        }
+
+        button.success {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        button.success:hover {
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.5);
+        }
+
+        input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 120px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .demo-info {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+            margin-bottom: 30px;
+        }
+
+        .demo-info strong {
+            color: #1976d2;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .power-bar-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+
+            .thresholds {
+                position: static;
+                right: auto;
+                top: auto;
+                flex-direction: row;
+                height: auto;
+                width: 100%;
+                margin-top: 20px;
+                justify-content: space-around;
+            }
+
+            .threshold-marker {
+                display: none;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .power-bar-wrapper {
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌡️ Vertical Power Bar</h1>
+
+        <div class="demo-info">
+            <strong>How it works:</strong> This vertical power bar fills from bottom to top like a thermometer.
+            It features color zones (red 0-30%, yellow 31-70%, green 71-100%) and customizable threshold markers.
+        </div>
+
+        <div class="power-bar-container">
+            <div class="power-bar-wrapper">
+                <div class="thermometer-top"></div>
+                <div class="power-bar" id="powerBar">
+                    <div class="power-fill" id="powerFill"></div>
+                </div>
+                <div class="thermometer-bulb" id="thermometerBulb"></div>
+                <div class="thresholds" id="thresholds"></div>
+            </div>
+        </div>
+
+        <div class="percentage-display" id="percentageDisplay">0%</div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">Current Power</div>
+                <div class="stat-value" id="currentPowerStat">0%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Status</div>
+                <div class="stat-value" id="statusStat">Empty</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Thresholds</div>
+                <div class="stat-value" id="thresholdCountStat">0</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <h3>Quick Add Points</h3>
+                <div class="button-group">
+                    <button onclick="powerBar.addPoints(5)">+5%</button>
+                    <button onclick="powerBar.addPoints(10)">+10%</button>
+                    <button onclick="powerBar.addPoints(25)">+25%</button>
+                    <button class="success" onclick="powerBar.setPower(50)">Set 50%</button>
+                    <button class="success" onclick="powerBar.setPower(100)">Max</button>
+                    <button class="danger" onclick="powerBar.reset()">Reset</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Custom Values</h3>
+                <div class="button-group">
+                    <input type="number" id="customValue" min="0" max="100" placeholder="0-100">
+                    <button onclick="setCustomValue()">Set</button>
+                    <button onclick="addCustomPoints()">Add</button>
+                </div>
+            </div>
+
+            <div class="control-group full-width">
+                <h3>Threshold Management</h3>
+                <div class="button-group">
+                    <button onclick="addDefaultThresholds()">Add Default</button>
+                    <button onclick="addWorkoutThresholds()">Workout Zones</button>
+                    <button onclick="addGamingThresholds()">Gaming Levels</button>
+                    <button class="danger" onclick="clearThresholds()">Clear All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class PowerBar {
+            constructor(elementId, options = {}) {
+                this.powerBar = document.getElementById(elementId);
+                this.powerFill = document.getElementById('powerFill');
+                this.percentageDisplay = document.getElementById('percentageDisplay');
+                this.thresholdsContainer = document.getElementById('thresholds');
+                this.currentPowerStat = document.getElementById('currentPowerStat');
+                this.statusStat = document.getElementById('statusStat');
+                this.thresholdCountStat = document.getElementById('thresholdCountStat');
+                this.thermometerBulb = document.getElementById('thermometerBulb');
+
+                this.currentPower = 0;
+                this.thresholds = [];
+
+                this.options = {
+                    animationDuration: options.animationDuration || 800,
+                    maxPower: options.maxPower || 100,
+                    ...options
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.updateDisplay();
+            }
+
+            addPoints(amount) {
+                const newPower = Math.min(this.currentPower + amount, this.options.maxPower);
+                this.setPower(newPower);
+            }
+
+            setPower(percentage) {
+                percentage = Math.max(0, Math.min(percentage, this.options.maxPower));
+                this.currentPower = percentage;
+                this.updateDisplay();
+
+                // Check if we hit any thresholds
+                this.checkThresholdCrossing();
+            }
+
+            reset() {
+                this.currentPower = 0;
+                this.updateDisplay();
+            }
+
+            getColorForPercentage(percentage) {
+                // Create smooth color transition from red to yellow to green
+                // Red at 0%, Yellow at 50%, Green at 100%
+
+                const red = Math.round(255 * (1 - percentage / 100));
+                const green = Math.round(255 * (percentage / 100));
+
+                // Add some complexity to make it more visually appealing
+                // At low percentages: more red, at medium: orange/yellow, at high: green
+                if (percentage <= 50) {
+                    // Red to Orange/Yellow transition
+                    const r = 231; // Base red value
+                    const g = Math.round(76 + (192 - 76) * (percentage / 50)); // 76 to 192
+                    const b = Math.round(60 + (92 - 60) * (percentage / 50)); // 60 to 92
+                    return `rgb(${r}, ${g}, ${b})`;
+                } else {
+                    // Yellow to Green transition
+                    const r = Math.round(243 * (1 - (percentage - 50) / 50)); // 243 to 0
+                    const g = 156; // Base green value
+                    const b = Math.round(18 + (96 - 18) * ((percentage - 50) / 50)); // 18 to 96
+                    return `rgb(${r}, ${g}, ${b})`;
+                }
+            }
+
+            updateDisplay() {
+                const fillHeight = this.currentPower;
+                this.powerFill.style.height = `${fillHeight}%`;
+                this.percentageDisplay.textContent = `${Math.round(this.currentPower)}%`;
+                this.currentPowerStat.textContent = `${Math.round(this.currentPower)}%`;
+
+                // Get color based on current percentage
+                const currentColor = this.getColorForPercentage(this.currentPower);
+
+                // Update fill color
+                this.powerFill.style.background = currentColor;
+
+                // Update percentage display color
+                this.percentageDisplay.style.color = currentColor;
+
+                // Update status based on percentage
+                if (this.currentPower <= 30) {
+                    this.statusStat.textContent = 'Low';
+                } else if (this.currentPower <= 70) {
+                    this.statusStat.textContent = 'Medium';
+                } else {
+                    this.statusStat.textContent = 'High';
+                }
+                this.statusStat.style.color = currentColor;
+
+                // Update thermometer bulb color to match fill color
+                if (this.currentPower === 0) {
+                    this.thermometerBulb.style.background = '#333';
+                } else {
+                    this.thermometerBulb.style.background = currentColor;
+                }
+
+                this.thresholdCountStat.textContent = this.thresholds.length;
+            }
+
+            checkThresholdCrossing() {
+                this.thresholds.forEach(threshold => {
+                    if (Math.abs(this.currentPower - threshold.percentage) < 1) {
+                        this.announceThreshold(threshold);
+                    }
+                });
+            }
+
+            announceThreshold(threshold) {
+                // Simple visual feedback for threshold crossing
+                this.percentageDisplay.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    this.percentageDisplay.style.transform = 'scale(1)';
+                }, 300);
+            }
+
+            addThreshold(percentage, label) {
+                const threshold = {
+                    percentage: Math.max(0, Math.min(percentage, this.options.maxPower)),
+                    label: label || `${percentage}%`
+                };
+
+                this.thresholds.push(threshold);
+                this.thresholds.sort((a, b) => a.percentage - b.percentage);
+                this.renderThresholds();
+            }
+
+            renderThresholds() {
+                this.thresholdsContainer.innerHTML = '';
+
+                this.thresholds.forEach(threshold => {
+                    const thresholdElement = document.createElement('div');
+                    thresholdElement.className = 'threshold';
+                    thresholdElement.style.bottom = `${threshold.percentage}%`;
+                    thresholdElement.innerHTML = `
+                        <div class="threshold-marker"></div>
+                        <span class="threshold-value">${threshold.percentage}%</span>
+                        <span>${threshold.label}</span>
+                    `;
+
+                    this.thresholdsContainer.appendChild(thresholdElement);
+                });
+
+                this.thresholdCountStat.textContent = this.thresholds.length;
+            }
+
+            clearThresholds() {
+                this.thresholds = [];
+                this.renderThresholds();
+            }
+
+            getCurrentPower() {
+                return this.currentPower;
+            }
+        }
+
+        // Initialize Power Bar
+        const powerBar = new PowerBar('powerBar');
+
+        // Helper functions for demo
+        function setCustomValue() {
+            const input = document.getElementById('customValue');
+            const value = parseFloat(input.value);
+
+            if (!isNaN(value)) {
+                powerBar.setPower(value);
+                input.value = '';
+            }
+        }
+
+        function addCustomPoints() {
+            const input = document.getElementById('customValue');
+            const value = parseFloat(input.value);
+
+            if (!isNaN(value)) {
+                powerBar.addPoints(value);
+                input.value = '';
+            }
+        }
+
+        function addDefaultThresholds() {
+            powerBar.clearThresholds();
+            powerBar.addThreshold(25, 'Quarter');
+            powerBar.addThreshold(50, 'Half');
+            powerBar.addThreshold(75, 'Three-quarters');
+            powerBar.addThreshold(90, 'Almost full');
+        }
+
+        function addWorkoutThresholds() {
+            powerBar.clearThresholds();
+            powerBar.addThreshold(20, 'Warm-up');
+            powerBar.addThreshold(40, 'Fat Burn');
+            powerBar.addThreshold(60, 'Cardio');
+            powerBar.addThreshold(80, 'Peak');
+            powerBar.addThreshold(95, 'Max Effort');
+        }
+
+        function addGamingThresholds() {
+            powerBar.clearThresholds();
+            powerBar.addThreshold(10, 'Level 1');
+            powerBar.addThreshold(25, 'Level 5');
+            powerBar.addThreshold(50, 'Level 10');
+            powerBar.addThreshold(75, 'Level 15');
+            powerBar.addThreshold(100, 'MAX LEVEL');
+        }
+
+        function clearThresholds() {
+            powerBar.clearThresholds();
+        }
+
+        // Add default thresholds for demonstration
+        addDefaultThresholds();
+    </script>
+</body>
+</html>
